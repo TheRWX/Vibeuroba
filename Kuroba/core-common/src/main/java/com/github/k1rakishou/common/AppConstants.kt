@@ -30,7 +30,10 @@ open class AppConstants(
   val filterWatchWorkUniqueTag = "FilterWatcherController_${flavorType.name}"
   val threadDownloadWorkUniqueTag = "ThreadDownloadController_${flavorType.name}"
 
-  val userAgent by lazy {
+  // PUBLICATION: never hold a lock while WebSettings.getDefaultUserAgent() runs. Off the main
+  // thread it waits for WebView startup on the main thread, so a lock here deadlocks (ANR) when
+  // the main thread asks for the user agent while the background preload is still running.
+  val userAgent by lazy(LazyThreadSafetyMode.PUBLICATION) {
     val overriddenUserAgent = overrideUserAgent()
     if (overriddenUserAgent.isNotBlank()) {
       Logger.d(TAG, "userAgent() Using overridden user agent: \'${overriddenUserAgent}\'")
@@ -43,9 +46,6 @@ open class AppConstants(
     }
 
     try {
-      // TODO: cache this value in sharedprefs. For some reason, sometimes, when accessing this thing it deadlocks.
-      //  Not sure if it only happens on an emulator (emulator bug or whatever).
-
       Logger.d(TAG, "userAgent() WebSettings.getDefaultUserAgent() start...")
       val webViewUserAgent = WebSettings.getDefaultUserAgent(context)
       Logger.d(TAG, "userAgent() WebSettings.getDefaultUserAgent() end. Using default WebView user agent: '${webViewUserAgent}'")
