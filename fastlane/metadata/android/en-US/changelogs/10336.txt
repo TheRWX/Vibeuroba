@@ -1,7 +1,8 @@
 v1.3.36 (Vibeuroba 1.0)
 - Works on 16 KB memory-page devices (e.g. Pixel 8): GIF decoder updated.
-- Own app ID: installs alongside Kuroba. Settings and bookmarks are not migrated.
-- Fix an intermittent freeze when opening a thread soon after app start.
-- Fix a crash on Android 5-6 when deselecting boards in the filter board picker.
-- "Report tracker" link opens Vibeuroba's issue tracker.
-- First release signed with the Vibeuroba release key.
+- Own app ID: installs alongside Kuroba. Settings/bookmarks are not migrated.
+- Fix a freeze when opening a thread soon after app start.
+- Fix a crash when swiping between catalog and a thread that is still opening.
+- Fix a crash on Android 5-6 in the filter board picker.
+- "Report tracker" opens Vibeuroba's issue tracker.
+- Signed with the Vibeuroba release key.
