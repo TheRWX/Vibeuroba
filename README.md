@@ -43,20 +43,31 @@ This first pass establishes the name, version, and project documentation.
 The capabilities above come from the existing codebase; they are not a claim
 that every feature has been newly implemented or tested for 1.0.
 
-Before publishing a 1.0 APK, the remaining release work is to:
+Status of the first signed 1.0 release (`v1.3.36`):
 
-- Verify the Android build and exercise browsing, posting, media, and downloads
-  on a device.
-- Adapt the inherited updater and release scripts to Vibeuroba's version series
-  and release destinations.
-- Confirm release signing and the upgrade path from previously installed builds.
+- Verified on an Android 16 KB-page emulator: site/board setup, catalog,
+  threads, deep links, JPG/WEBM/GIF media and randomized UI stress testing.
+  Posting, login, downloads and notifications have not been verified yet, and
+  no physical device run has been recorded.
+- Release tags follow the inherited updater scheme `vMAJOR.MINOR.PATCH`, which
+  maps to the Android version code (`v1.3.36` = `10336`).
 
 ## Download and installation
 
 Published APKs are listed on this fork's
 [Releases page](https://github.com/TheRWX/Vibeuroba/releases).
-**Setting this branch to 1.0 does not publish a 1.0 APK.** Check the release title
-and attached assets before installing. The upstream project's APKs and F-Droid
+Check the release title and attached assets before installing. Release APKs
+are signed with the Vibeuroba release key; verify the certificate before
+installing:
+
+```sh
+apksigner verify --print-certs Vibeuroba.apk
+# Signer #1 certificate SHA-256 digest:
+# ba568a31fb051b24447636cbc2f730a2a56c02e5328985d0ea9c129dc86161de
+```
+
+Earlier test APKs (including `v1.3.35`) were debug-signed and use a different
+application ID, so they cannot be upgraded in place. The upstream project's APKs and F-Droid
 listing are separate distributions.
 
 The app targets devices running Android 5.0 (API 21) or newer. Vibeuroba uses

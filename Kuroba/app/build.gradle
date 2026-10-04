@@ -40,9 +40,9 @@ android {
         buildConfigField "String", "BETA_UPDATE_API_ENDPOINT", "\"https://api.github.com/repos/TheRWX/Kuroba-Experimental-beta/releases/latest\""
         buildConfigField "String", "GITHUB_ENDPOINT", "\"https://github.com/TheRWX/Vibeuroba\""
         buildConfigField "String", "GITHUB_CHANGELOGS_ENDPOINT", "\"https://raw.githubusercontent.com/TheRWX/Vibeuroba/vibeuroba-1.0/fastlane/metadata/android/en-US/changelogs/\""
-        buildConfigField "String", "GITHUB_REPORTS_ENDPOINT", "\"https://github.com/KurobaExReports/Reports/issues/\""
+        buildConfigField "String", "GITHUB_REPORTS_ENDPOINT", "\"https://github.com/TheRWX/Vibeuroba/issues/\""
         // this is for checking who's built what in debug logs
-        buildConfigField "String", "RELEASE_SIGNATURE", "\"86242978CF53C34361A8C962D0A57107AEB70E10631AE13EB5B006C0CF673FA9\""
+        buildConfigField "String", "RELEASE_SIGNATURE", "\"BA568A31FB051B24447636CBC2F730A2A56C02E5328985D0EA9C129DC86161DE\""
         // this is the default dev signing signature, update it if you change the dev keystore
         buildConfigField "String", "DEBUG_SIGNATURE", "\"DC5195CC40E42B95267D500B6E93E46EC51028C67BDD3D09BBB9C208BF20C8FE\""
         buildConfigField "String", "COMMIT_HASH", "\"" + getCommitHash() + "\""
@@ -181,6 +181,7 @@ android {
 
                         v1SigningEnabled true
                         v2SigningEnabled true
+                        enableV3Signing true
                     }
                 }
 
