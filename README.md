@@ -59,10 +59,11 @@ Published APKs are listed on this fork's
 and attached assets before installing. The upstream project's APKs and F-Droid
 listing are separate distributions.
 
-The app targets devices running Android 5.0 (API 21) or newer. Its existing
-Android application ID is retained. Installing over a previous build requires
-a compatible signing key; the displayed version alone does not establish
-upgrade compatibility.
+The app targets devices running Android 5.0 (API 21) or newer. Vibeuroba uses
+the independent Android application ID `com.github.therwx.vibeuroba`, allowing
+it to install alongside Kuroba without replacing Kuroba or its data. Existing
+settings and bookmarks are not automatically migrated. Future Vibeuroba updates
+must use the same signing key and an increasing internal version code.
 
 ## Build from source
 

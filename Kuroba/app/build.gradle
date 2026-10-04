@@ -28,8 +28,8 @@ android {
         minSdkVersion 21
         targetSdkVersion 33
 
-        // if you change this, also change the AndroidManifest package
-        applicationId "com.github.k1rakishou.chan"
+        // Independent install identity; keep the source namespace for existing classes.
+        applicationId "com.github.therwx.vibeuroba"
         // ALL ENDPOINTS SHOULD BE HTTPS
 
         // CHANGE THESE TO YOUR GITHUB REPOSITORY
@@ -283,7 +283,7 @@ dependencies {
     implementation "com.squareup.okhttp3:okhttp-dnsoverhttps:${versions.okhttp}"
     implementation "com.squareup.okhttp3:logging-interceptor:${versions.okhttp}"
     implementation "org.jsoup:jsoup:${versions.jsoup}"
-    implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.23'
+    implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.32'
     implementation 'com.davemorrissey.labs:subsampling-scale-image-view:3.10.0'
     implementation 'org.nibor.autolink:autolink:0.10.0'
     implementation "com.google.code.gson:gson:${versions.gson}"
