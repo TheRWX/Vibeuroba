@@ -1,0 +1,11 @@
+v1.3.49 (Vibeuroba 1.1.2)
+Modern Android fixes:
+- Android 15+: image saving and posting no longer crash the app when Android's daily 6-hour limit for background data work runs out; they stop cleanly.
+- Android 12+: no crash when Android refuses to start image saving or posting in the background.
+- No more stuck "saving images" notification when a download request can't be loaded.
+- In-app updates no longer ask for storage permission on Android 7 and newer.
+- Status and navigation bar icon colors use the current Android API.
+- The debug thread-dump receiver can no longer be triggered by other apps.
+App lock:
+- Checking the PIN no longer briefly freezes the screen on slow devices.
+- Turning app lock off and on again keeps your fingerprint/face setting.
