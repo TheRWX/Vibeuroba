@@ -33,6 +33,7 @@ import com.github.k1rakishou.v2.KurobaSettings
 import com.github.k1rakishou.v2.parameters.ImageSaverV2Options
 import com.google.gson.Gson
 import dagger.Lazy
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -57,6 +58,8 @@ class ImageSaverV2Service : Service() {
   private val notificationUpdateExecutor = KeyBasedSerializedCoroutineExecutor<String>(kurobaScope)
 
   private var stopServiceJob: Job? = null
+  // Start requests whose input is still being loaded; they aren't in the delegate's active downloads yet.
+  private val pendingStartRequests = AtomicInteger(0)
 
   override fun onBind(intent: Intent?): IBinder? {
     return null
@@ -144,15 +147,28 @@ class ImageSaverV2Service : Service() {
       }
     }
 
+    pendingStartRequests.incrementAndGet()
+
     kurobaScope.launch {
-      val imageSaverInputData = convertInputData(intent)
+      val imageSaverInputData = try {
+        convertInputData(intent)
+      } catch (error: Exception) {
+        Logger.e(TAG, "onStartCommand() convertInputData() error", error)
+        null
+      }
+
       if (imageSaverInputData == null) {
         Logger.d(TAG, "onStartCommand() convertInputData() failed")
+        val otherPendingRequests = pendingStartRequests.decrementAndGet()
 
-        // Nothing to download: don't keep an idle foreground service (and its notification) around.
-        if (imageSaverV2ServiceDelegate.get().activeDownloadsCount() == 0) {
+        // Nothing to download: don't keep an idle foreground service (and its notification) around. Only when no
+        // other request is loading or downloading, and only if this was the latest start (stopSelfResult).
+        if (
+          otherPendingRequests == 0 &&
+          imageSaverV2ServiceDelegate.get().activeDownloadsCount() == 0 &&
+          stopSelfResult(startId)
+        ) {
           ServiceCompat.stopForeground(this@ImageSaverV2Service, ServiceCompat.STOP_FOREGROUND_REMOVE)
-          stopSelf(startId)
         }
 
         return@launch
@@ -161,6 +177,7 @@ class ImageSaverV2Service : Service() {
       val activeDownloadsCountBefore = imageSaverV2ServiceDelegate.get().createDownloadContext(
         imageSaverInputData.uniqueId
       )
+      pendingStartRequests.decrementAndGet()
 
       if (verboseLogs) {
         Logger.d(TAG, "onStartCommand() start, activeDownloadsCount=$activeDownloadsCountBefore")

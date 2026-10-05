@@ -56,6 +56,9 @@ class AppPrivacyManager(
   private val lockCovers = WeakHashMap<Activity, LockCover>()
 
   private var locked = true
+  // Incremented whenever a new lock session starts, so a PIN check still running from an earlier session can't
+  // unlock a later one.
+  private var lockGeneration = 0
   private var promptShowing = false
   private var lastBackgroundTime = 0L
   fun initialize() {
@@ -85,7 +88,10 @@ class AppPrivacyManager(
     if (wasInBackground && !promptShowing && lastBackgroundTime > 0L) {
       val timeoutMs = TimeUnit.SECONDS.toMillis(kurobaSettings.application.appLockTimeoutSeconds.readBlocking())
       if (SystemClock.elapsedRealtime() - lastBackgroundTime >= timeoutMs) {
-        locked = true
+        if (!locked) {
+          locked = true
+          lockGeneration++
+        }
       }
 
       // Consume the timestamp so a later activity recreation isn't mistaken for another return.
@@ -271,6 +277,7 @@ class AppPrivacyManager(
     val pin = lockCover.pinInput.text?.toString().orEmpty()
     lockCover.pinInput.setText("")
     lockCover.verifying = true
+    val generation = lockGeneration
 
     scope.launch {
       val correct = try {
@@ -280,6 +287,11 @@ class AppPrivacyManager(
       }
 
       if (correct) {
+        if (generation != lockGeneration || !locked) {
+          // The app was left and re-locked (or already unlocked) while this PIN was being checked.
+          return@launch
+        }
+
         appLockPin.resetFailedAttempts()
         hideKeyboard(activity, lockCover)
         unlock()
