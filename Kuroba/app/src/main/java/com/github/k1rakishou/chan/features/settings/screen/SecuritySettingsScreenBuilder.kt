@@ -90,8 +90,9 @@ class SecuritySettingsScreenBuilder(
               appResources.string(R.string.setting_app_lock_biometrics_unavailable)
             }
           },
-          setting = kurobaSettings.application.appLockBiometrics,
-          dependencies = listOf(kurobaSettings.nonBackupable.appLockEnabled)
+          // No `dependencies` here: the settings widget switches a Bool off whenever its dependency turns off,
+          // which would silently disable biometrics every time app lock is turned off and on again.
+          setting = kurobaSettings.application.appLockBiometrics
         )
       )
 
@@ -125,7 +126,7 @@ class SecuritySettingsScreenBuilder(
   private suspend fun turnOnAppLock(context: Context, settingActions: SettingActions) {
     val newPin = askForNewPin(context, settingActions) ?: return
 
-    appLockPin.save(newPin)
+    appLockPin.saveAsync(newPin)
     kurobaSettings.nonBackupable.appLockEnabled.write(true)
     settingActions.showToast(appResources.string(R.string.app_lock_enabled_toast))
   }
@@ -167,7 +168,7 @@ class SecuritySettingsScreenBuilder(
     }
 
     val newPin = askForNewPin(context, settingActions) ?: return
-    appLockPin.save(newPin)
+    appLockPin.saveAsync(newPin)
     settingActions.showToast(appResources.string(R.string.app_lock_pin_changed_toast))
   }
 
@@ -176,7 +177,7 @@ class SecuritySettingsScreenBuilder(
     val pin = askForPin(context, R.string.app_lock_enter_current_pin, null)
       ?: return false
 
-    if (!appLockPin.verify(pin)) {
+    if (!appLockPin.verifyAsync(pin)) {
       settingActions.showToast(appResources.string(R.string.app_lock_wrong_pin))
       return false
     }

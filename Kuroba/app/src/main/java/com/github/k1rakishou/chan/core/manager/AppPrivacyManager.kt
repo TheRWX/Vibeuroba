@@ -264,20 +264,33 @@ class AppPrivacyManager(
       return
     }
 
-    val pin = lockCover.pinInput.text?.toString().orEmpty()
-    lockCover.pinInput.setText("")
-
-    if (appLockPin.verify(pin)) {
-      appLockPin.resetFailedAttempts()
-      hideKeyboard(activity, lockCover)
-      unlock()
+    if (lockCover.verifying) {
       return
     }
 
-    appLockPin.onWrongAttempt()
+    val pin = lockCover.pinInput.text?.toString().orEmpty()
+    lockCover.pinInput.setText("")
+    lockCover.verifying = true
 
-    if (!showLockoutIfNeeded(lockCover)) {
-      showError(lockCover, activity.getString(R.string.app_lock_wrong_pin))
+    scope.launch {
+      val correct = try {
+        appLockPin.verifyAsync(pin)
+      } finally {
+        lockCover.verifying = false
+      }
+
+      if (correct) {
+        appLockPin.resetFailedAttempts()
+        hideKeyboard(activity, lockCover)
+        unlock()
+        return@launch
+      }
+
+      appLockPin.onWrongAttempt()
+
+      if (!showLockoutIfNeeded(lockCover)) {
+        showError(lockCover, activity.getString(R.string.app_lock_wrong_pin))
+      }
     }
   }
 
@@ -378,7 +391,10 @@ class AppPrivacyManager(
     val errorText: TextView,
     val prompt: BiometricPrompt?,
     val backCallback: OnBackPressedCallback
-  )
+  ) {
+    // True while a submitted PIN is being checked off the main thread.
+    var verifying = false
+  }
 
   companion object {
     private const val TAG = "AppPrivacyManager"

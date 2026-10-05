@@ -6,6 +6,8 @@ import java.security.MessageDigest
 import java.security.SecureRandom
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * The user-chosen Vibeuroba app lock PIN. Only a salted PBKDF2 hash is stored
@@ -27,6 +29,12 @@ class AppLockPin(
     )
     resetFailedAttempts()
   }
+
+  /** [save] off the main thread: PBKDF2 takes a noticeable moment on slow devices. */
+  suspend fun saveAsync(pin: String) = withContext(Dispatchers.Default) { save(pin) }
+
+  /** [verify] off the main thread: PBKDF2 takes a noticeable moment on slow devices. */
+  suspend fun verifyAsync(pin: String): Boolean = withContext(Dispatchers.Default) { verify(pin) }
 
   fun clear() {
     settings.appLockPinHash.writeBlocking("")
