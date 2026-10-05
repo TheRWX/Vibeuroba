@@ -84,9 +84,9 @@ android {
         //            p -> patch
         //            MmmPP
         // Vibeuroba release tags are vM.m.p = versionCode MmmPP (the updater parses the tag). Must stay above
-        // the last Vibeuroba release (10336). Based on KurobaEx v1.3.47.
-        versionCode = 10347
-        versionName = "1.1"
+        // the last Vibeuroba release (10347). Based on KurobaEx v1.3.47.
+        versionCode = 10348
+        versionName = "1.1.1"
 
         configurations.configureEach {
             resolutionStrategy {

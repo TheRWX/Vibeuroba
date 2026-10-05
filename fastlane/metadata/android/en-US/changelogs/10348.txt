@@ -1,0 +1,3 @@
+v1.3.48 (Vibeuroba 1.1.1)
+- Smoother in-app updates: updates install through Android's package installer session. The first update from inside the app asks once (and may ask to allow installs from Vibeuroba); after that, updates on Android 12+ install without any prompt.
+- After an update, a "Vibeuroba updated - tap to open" notification reopens the app.
