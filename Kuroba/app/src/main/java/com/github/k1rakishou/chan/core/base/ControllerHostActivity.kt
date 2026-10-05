@@ -12,6 +12,7 @@ import com.github.k1rakishou.chan.R
 import com.github.k1rakishou.chan.core.di.module.activity.ActivityScopedViewModelFactory
 import com.github.k1rakishou.chan.core.di.module.activity.IHasActivityComponent
 import com.github.k1rakishou.chan.core.di.module.shared.IHasViewModelProviderFactory
+import com.github.k1rakishou.chan.core.manager.AppPrivacyManager
 import com.github.k1rakishou.chan.ui.controller.base.Controller
 import com.github.k1rakishou.chan.ui.helper.RuntimePermissionsHelper
 import com.github.k1rakishou.chan.utils.IHasViewModelScope
@@ -57,7 +58,7 @@ abstract class ControllerHostActivity :
   }
 
   override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-    if (stack.isEmpty()) {
+    if (stack.isEmpty() || AppPrivacyManager.uiLocked) {
       return super.dispatchKeyEvent(event)
     }
 
@@ -65,7 +66,8 @@ abstract class ControllerHostActivity :
   }
 
   override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
-    if (stack.isEmpty() || ev == null) {
+    // While app lock covers the UI, only the lock cover (in the view hierarchy) may receive events.
+    if (stack.isEmpty() || ev == null || AppPrivacyManager.uiLocked) {
       return super.dispatchTouchEvent(ev)
     }
 

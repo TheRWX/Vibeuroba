@@ -23,6 +23,7 @@ import com.github.k1rakishou.chan.core.helper.DialogFactory
 import com.github.k1rakishou.chan.core.helper.NotificationsPermissionHelper
 import com.github.k1rakishou.chan.core.helper.StartActivityStartupHandlerHelper
 import com.github.k1rakishou.chan.core.helper.migration.settings.KurobaSettingsMigrationHelper
+import com.github.k1rakishou.chan.core.manager.AppPrivacyManager
 import com.github.k1rakishou.chan.core.manager.ApplicationCrashNotifier
 import com.github.k1rakishou.chan.core.manager.ChanThreadViewableInfoManager
 import com.github.k1rakishou.chan.core.manager.GlobalWindowInsetsManager
@@ -355,7 +356,7 @@ class StartActivity :
   }
 
   override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-    if (event.keyCode == KeyEvent.KEYCODE_MENU && event.action == KeyEvent.ACTION_DOWN) {
+    if (event.keyCode == KeyEvent.KEYCODE_MENU && event.action == KeyEvent.ACTION_DOWN && !AppPrivacyManager.uiLocked) {
       mainController.onMenuClicked()
       return true
     }

@@ -1,6 +1,7 @@
 package com.github.k1rakishou.chan.features.settings.screen
 
 import android.content.Context
+import android.os.Build
 import com.github.k1rakishou.chan.R
 import com.github.k1rakishou.chan.features.reordering.SimpleListItemsReorderingController
 import com.github.k1rakishou.chan.features.settings.SettingsScreen
@@ -51,6 +52,22 @@ class AppearanceSettingsScreenBuilder(
 
             settingActions.pushController(ThemeSettingsController(context))
           }
+        )
+      )
+
+      addSetting(
+        SettingUiElement.Bool(
+          enabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S,
+          title = { appResources.string(R.string.setting_material_you_theme) },
+          description = {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+              appResources.string(R.string.setting_material_you_theme_description)
+            } else {
+              appResources.string(R.string.setting_material_you_theme_unsupported)
+            }
+          },
+          setting = kurobaSettings.application.materialYouTheme,
+          requiresAppRestart = true
         )
       )
     }
@@ -388,6 +405,15 @@ class AppearanceSettingsScreenBuilder(
           title = { appResources.string(R.string.settings_remove_image_spoilers) },
           description = { appResources.string(R.string.settings_remove_image_spoilers_description) },
           setting = kurobaSettings.application.postThumbnailRemoveImageSpoilers
+        )
+      )
+
+      addSetting(
+        SettingUiElement.Bool(
+          title = { appResources.string(R.string.setting_blur_thumbnails) },
+          description = { appResources.string(R.string.setting_blur_thumbnails_description) },
+          setting = kurobaSettings.application.blurThumbnails,
+          requiresPostListRefresh = true
         )
       )
     }

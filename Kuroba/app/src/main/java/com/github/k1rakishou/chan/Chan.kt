@@ -20,10 +20,12 @@ import com.github.k1rakishou.chan.core.di.module.application.ParserModule
 import com.github.k1rakishou.chan.core.di.module.application.RepositoryModule
 import com.github.k1rakishou.chan.core.di.module.application.SiteModule
 import com.github.k1rakishou.chan.core.di.module.application.UseCaseModule
+import com.github.k1rakishou.chan.core.helper.AppLockPin
 import com.github.k1rakishou.chan.core.helper.ImageLoaderFileManagerWrapper
 import com.github.k1rakishou.chan.core.helper.ImageSaverFileManagerWrapper
 import com.github.k1rakishou.chan.core.helper.ThreadDownloaderFileManagerWrapper
 import com.github.k1rakishou.chan.core.helper.migration.app.ApplicationMigrationHelper
+import com.github.k1rakishou.chan.core.manager.AppPrivacyManager
 import com.github.k1rakishou.chan.core.manager.ApplicationVisibilityManager
 import com.github.k1rakishou.chan.ui.activity.CrashReportActivity
 import com.github.k1rakishou.chan.ui.adapter.PostsFilter
@@ -311,6 +313,14 @@ class Chan : Application(), ActivityLifecycleCallbacks {
 
     runBlocking { themeEngine.initialize(this@Chan, TimeUtils.isHalloweenToday()) }
     SpannableModuleInjector.initialize(themeEngine)
+
+    AppPrivacyManager(
+      application = this,
+      themeEngine = themeEngine,
+      kurobaSettings = kurobaSettings,
+      appLockPin = AppLockPin(kurobaSettings.nonBackupable),
+      scope = applicationScope
+    ).initialize()
 
     appDependenciesInitializer.init()
     setupErrorHandlers()

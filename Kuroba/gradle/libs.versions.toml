@@ -16,6 +16,7 @@ voyager = "1.0.1"
 joda-time = "2.14.1"
 android = "8.11.0"
 appcompat = "1.7.1"
+biometric = "1.1.0"
 androidx-preferences-ktx = "1.2.1"
 core-ktx = "1.18.0"
 material = "1.13.0"
@@ -68,6 +69,7 @@ dagger-compiler = { module = "com.google.dagger:dagger-compiler", version.ref = 
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 okhttp-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "okhttp" }
 appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
+biometric = { module = "androidx.biometric:biometric", version.ref = "biometric" }
 androidx-preferences-ktx = { module = "androidx.preference:preference-ktx", version.ref = "androidx-preferences-ktx" }
 androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "androidx-annotation" }
 androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-test-ext-junit" }

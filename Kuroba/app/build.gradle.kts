@@ -275,6 +275,7 @@ dependencies {
     implementation(project(":core-parser"))
 
     implementation(libs.appcompat)
+    implementation(libs.biometric)
     implementation(libs.androidx.preferences.ktx)
     implementation(libs.constraintlayout)
     implementation(libs.slidingpanelayout)

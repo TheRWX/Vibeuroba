@@ -2,17 +2,17 @@ package com.github.k1rakishou.chan.core.manager
 
 import android.app.ActivityManager
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.provider.Settings
 import com.github.k1rakishou.chan.BuildConfig
 import com.github.k1rakishou.chan.Chan
 import com.github.k1rakishou.chan.core.base.okhttp.ProxiedOkHttpClient
 import com.github.k1rakishou.chan.core.concurrency.SerializedCoroutineExecutor
-import com.github.k1rakishou.chan.utils.BackgroundUtils
+import com.github.k1rakishou.common.AndroidUtils
 import com.github.k1rakishou.common.AppConstants
 import com.github.k1rakishou.common.ModularResult
 import com.github.k1rakishou.common.isNotNullNorEmpty
-import com.github.k1rakishou.common.suspendCall
 import com.github.k1rakishou.core_logger.Logger
 import com.github.k1rakishou.v2.KurobaSettings
 import com.google.gson.Gson
@@ -21,10 +21,6 @@ import dagger.Lazy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 
 class ReportManager(
   private val kurobaSettings: KurobaSettings,
@@ -36,8 +32,6 @@ class ReportManager(
 ) {
   private val activityManager: ActivityManager?
     get() = appContext.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
-  private val okHttpClient: OkHttpClient
-    get() = proxiedOkHttpClient.get().okHttpClient()
 
   private val serializedCoroutineExecutor = SerializedCoroutineExecutor(
     scope = appScope,
@@ -203,54 +197,33 @@ class ReportManager(
     return "duration: ${duration}, transition: ${transition}, window: ${window}"
   }
 
+  /**
+   * Vibeuroba is a private fork: reports are never uploaded. Upstream posted them to the public
+   * kurobaexreports/reports GitHub repo; instead, hand the report to the Android share sheet so the
+   * user decides where it goes (notes, email, a private issue, ...).
+   */
   private suspend fun sendInternal(reportRequest: ReportRequest, issueNumber: Int? = null): ModularResult<Unit> {
-    BackgroundUtils.ensureBackgroundThread()
-
     return ModularResult.Try {
-      val json = try {
-        gson.get().toJson(reportRequest)
-      } catch (error: Throwable) {
-        Logger.e(TAG, "Couldn't convert $reportRequest to json", error)
-        throw error
+      val appName = AndroidUtils.applicationLabel
+      val subject = when {
+        issueNumber != null -> "$appName report comment (issue #$issueNumber)"
+        reportRequest.title.isNullOrEmpty() -> "$appName report"
+        else -> reportRequest.title
       }
 
-      val reportUrl = if (issueNumber != null) {
-        "https://api.github.com/repos/kurobaexreports/reports/issues/${issueNumber}/comments"
-      } else {
-        "https://api.github.com/repos/kurobaexreports/reports/issues"
+      val sendIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_SUBJECT, subject)
+        putExtra(Intent.EXTRA_TEXT, reportRequest.body)
       }
-      val requestBody = json.toRequestBody("application/json".toMediaType())
 
-      val request = Request.Builder()
-        .url(reportUrl)
-        .post(requestBody)
-        .header("Accept", "application/vnd.github.v3+json")
-        .header("Authorization", "token ${supersikritdonotlook()}")
-        .build()
-
-      val response = okHttpClient.suspendCall(request)
-
-      if (!response.isSuccessful) {
-        val errorMessage = response.body
-          ?.let { body -> gson.get().fromJson(body.string(), ReportResponse::class.java) }
-          ?.errorMessage
-
-        val message = if (errorMessage.isNullOrEmpty()) {
-          "Response is not successful. Status: ${response.code}"
-        } else {
-          "Response is not successful. Status: ${response.code}. ErrorMessage: '${errorMessage}'"
-        }
-
-        throw ReportError(message)
+      val chooserIntent = Intent.createChooser(sendIntent, subject).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
       }
+
+      withContext(Dispatchers.Main) { appContext.startActivity(chooserIntent) }
     }
   }
-
-  private fun supersikritdonotlook(): String {
-    return "removed"
-  }
-
-  private class ReportError(val errorMessage: String) : Exception(errorMessage)
 
   data class ReportRequest(
     @SerializedName("title")

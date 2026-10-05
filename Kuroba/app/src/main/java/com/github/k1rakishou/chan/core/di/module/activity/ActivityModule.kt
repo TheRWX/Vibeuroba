@@ -6,6 +6,7 @@ import com.github.k1rakishou.chan.core.base.okhttp.ProxiedOkHttpClient
 import com.github.k1rakishou.chan.core.cache.CacheHandler
 import com.github.k1rakishou.chan.core.cache.downloader.ChunkedMediaDownloader
 import com.github.k1rakishou.chan.core.di.scope.PerActivity
+import com.github.k1rakishou.chan.core.helper.AppLockPin
 import com.github.k1rakishou.chan.core.helper.AppRestarter
 import com.github.k1rakishou.chan.core.helper.DialogFactory
 import com.github.k1rakishou.chan.core.helper.KurobaSystemNotifications
@@ -317,7 +318,10 @@ class ActivityModule {
     )
     builders[SettingsScreenKey.Security] = SecuritySettingsScreenBuilder(
       appResources = appResources,
-      proxyStorage = proxyStorage
+      proxyStorage = proxyStorage,
+      kurobaSettings = kurobaSettings,
+      dialogFactory = dialogFactory,
+      appLockPin = AppLockPin(kurobaSettings.nonBackupable)
     )
     builders[SettingsScreenKey.Caching] = CachingSettingsScreenBuilder(
       kurobaSettings = kurobaSettings,

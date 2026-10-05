@@ -206,6 +206,23 @@ class ApplicationSettings(
     createBooleanSetting(KurobaSettingKey.Application.TransparencyOn, false)
   }
 
+  // Vibeuroba
+  val hideFromScreenshots by lazy {
+    createBooleanSetting(KurobaSettingKey.Application.VibeurobaHideFromScreenshots, false)
+  }
+  val blurThumbnails by lazy {
+    createBooleanSetting(KurobaSettingKey.Application.VibeurobaBlurThumbnails, false)
+  }
+  val materialYouTheme by lazy {
+    createBooleanSetting(KurobaSettingKey.Application.VibeurobaMaterialYouTheme, false)
+  }
+  val appLockTimeoutSeconds by lazy {
+    createLongSetting(KurobaSettingKey.Application.VibeurobaAppLockTimeoutSeconds, 60L)
+  }
+  val appLockBiometrics by lazy {
+    createBooleanSetting(KurobaSettingKey.Application.VibeurobaAppLockBiometrics, true)
+  }
+
   val boardPostViewMode by lazy {
     createEnumSetting<BoardPostViewMode>(
       clazz = BoardPostViewMode::class.java,

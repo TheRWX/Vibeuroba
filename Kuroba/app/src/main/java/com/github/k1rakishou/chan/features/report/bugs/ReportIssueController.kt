@@ -404,7 +404,7 @@ class ReportIssueController(
   private fun handleResult(result: ModularResult<Unit>) {
     when (result) {
       is ModularResult.Value -> {
-        AppModuleAndroidUtils.showToast(context, R.string.report_controller_report_sent_message)
+        AppModuleAndroidUtils.showToast(context, R.string.report_controller_report_shared_message)
         onFinished()
       }
       is ModularResult.Error -> {

@@ -22,4 +22,19 @@ class NonBackupableSettings(
       default = false
     )
   }
+
+  // Vibeuroba app lock
+  val appLockEnabled by lazy {
+    createBooleanSetting(KurobaSettingKey.NonBackupable.VibeurobaAppLockEnabled, false)
+  }
+  // Salted PBKDF2 hash of the user's PIN ("v1:<iterations>:<salt>:<hash>"), empty when no PIN is set.
+  val appLockPinHash by lazy {
+    createStringSetting(KurobaSettingKey.NonBackupable.VibeurobaAppLockPinHash, "")
+  }
+  val appLockFailedAttempts by lazy {
+    createIntSetting(KurobaSettingKey.NonBackupable.VibeurobaAppLockFailedAttempts, 0)
+  }
+  val appLockLockoutUntil by lazy {
+    createLongSetting(KurobaSettingKey.NonBackupable.VibeurobaAppLockLockoutUntil, 0L)
+  }
 }

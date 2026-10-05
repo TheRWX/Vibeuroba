@@ -57,6 +57,13 @@ sealed class KurobaSettingKey(val raw: String) {
     data object MediaViewerRevealImageSpoilers : Application("MediaViewerRevealImageSpoilers")
     data object TransparencyOn : Application("TransparencyOn")
 
+    // Vibeuroba
+    data object VibeurobaHideFromScreenshots : Application("VibeurobaHideFromScreenshots")
+    data object VibeurobaBlurThumbnails : Application("VibeurobaBlurThumbnails")
+    data object VibeurobaMaterialYouTheme : Application("VibeurobaMaterialYouTheme")
+    data object VibeurobaAppLockTimeoutSeconds : Application("VibeurobaAppLockTimeoutSeconds")
+    data object VibeurobaAppLockBiometrics : Application("VibeurobaAppLockBiometrics")
+
     data object BoardPostViewMode : Application("BoardPostViewMode")
     data object BoardOrder : Application("BoardOrder")
 
@@ -165,6 +172,12 @@ sealed class KurobaSettingKey(val raw: String) {
   sealed class NonBackupable(key: String) : KurobaSettingKey(key) {
     data object ApplicationMigrationVersion : NonBackupable("ApplicationMigrationVersion")
     data object SettingMigrationPerformed : NonBackupable("SettingMigrationPerformed")
+
+    // Vibeuroba app lock. Not backed up: a restored backup must never carry a PIN to another install.
+    data object VibeurobaAppLockEnabled : NonBackupable("VibeurobaAppLockEnabled")
+    data object VibeurobaAppLockPinHash : NonBackupable("VibeurobaAppLockPinHash")
+    data object VibeurobaAppLockFailedAttempts : NonBackupable("VibeurobaAppLockFailedAttempts")
+    data object VibeurobaAppLockLockoutUntil : NonBackupable("VibeurobaAppLockLockoutUntil")
   }
 
   sealed class Mpv(key: String) : KurobaSettingKey(key) {

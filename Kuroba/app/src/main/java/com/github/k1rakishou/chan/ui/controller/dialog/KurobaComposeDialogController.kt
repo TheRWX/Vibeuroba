@@ -17,6 +17,7 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -24,11 +25,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
@@ -122,6 +127,7 @@ class KurobaComposeDialogController(
         val initialValueString = when (input) {
           is Input.Number -> input.initialValue?.toString()
           is Input.String -> input.initialValue
+          is Input.Pin -> null
         }
 
         if (initialValueString == null) {
@@ -305,10 +311,17 @@ class KurobaComposeDialogController(
         val inputValueState = inputValueStates[index]
         var value by inputValueState
 
+        // Focus a PIN input right away so the number pad opens with the dialog.
+        val focusRequester = remember { FocusRequester() }
+        if (input is Input.Pin && index == 0) {
+          LaunchedEffect(Unit) { focusRequester.requestFocus() }
+        }
+
         val keyboardOptions = KeyboardOptions(
           keyboardType = when (input) {
             is Input.Number -> KeyboardType.Number
             is Input.String -> KeyboardType.Text
+            is Input.Pin -> KeyboardType.NumberPassword
           }
         )
 
@@ -319,11 +332,22 @@ class KurobaComposeDialogController(
         }
 
         KurobaComposeTextField(
-          modifier = Modifier.fillMaxWidth(),
+          modifier = Modifier
+            .fillMaxWidth()
+            .focusRequester(focusRequester),
           value = value,
           keyboardOptions = keyboardOptions,
+          visualTransformation = if (input is Input.Pin) {
+            PasswordVisualTransformation()
+          } else {
+            VisualTransformation.None
+          },
           onValueChange = { newValue ->
             if (input is Input.Number && newValue.text.toIntOrNull() == null) {
+              return@KurobaComposeTextField
+            }
+
+            if (input is Input.Pin && newValue.text.any { ch -> ch !in '0'..'9' }) {
               return@KurobaComposeTextField
             }
 
@@ -472,6 +496,12 @@ class KurobaComposeDialogController(
       override val hint: Text? = null,
       override val result: CompletableDeferred<InputResult> = CompletableDeferred(),
       val initialValue: Int? = null
+    ) : Input()
+
+    /** Digits only, masked while typing (Vibeuroba app lock PIN). Never pre-filled. */
+    class Pin(
+      override val hint: Text? = null,
+      override val result: CompletableDeferred<InputResult> = CompletableDeferred()
     ) : Input()
   }
 

@@ -1731,4 +1731,45 @@ Actual error: \'%1$s\'</string>
     <string name="open_url_in_webview_proxy_leak_description">A proxy is configured for this site, but the Android WebView does not honor application proxies. Loading this URL in the built in WebView will connect directly and may reveal your real IP to the destination.\n\nOpen anyway, or cancel and use an external app.</string>
     <string name="open_url_in_webview_proxy_leak_open_anyway">Open anyway</string>
 
+    <!-- Vibeuroba privacy and appearance -->
+    <string name="settings_group_vibeuroba_privacy">Privacy</string>
+    <string name="setting_app_lock">App lock</string>
+    <string name="setting_app_lock_description">Require a Vibeuroba PIN to open the app. Tap to create a PIN, change it or turn app lock off.</string>
+    <string name="setting_app_lock_manage_description">App lock is on. Changing the PIN or turning app lock off asks for your current PIN.</string>
+    <string name="app_lock_turn_off">Turn off</string>
+    <string name="setting_app_lock_change_pin">Change PIN</string>
+    <string name="setting_app_lock_biometrics">Unlock with fingerprint or face</string>
+    <string name="setting_app_lock_biometrics_description">Your PIN always works as a fallback</string>
+    <string name="setting_app_lock_biometrics_unavailable">No fingerprint or face unlock set up on this device; the PIN will be used</string>
+    <string name="setting_app_lock_timeout">Lock after leaving the app</string>
+    <string name="setting_app_lock_timeout_immediately">Immediately</string>
+    <string name="setting_app_lock_timeout_one_minute">After 1 minute</string>
+    <string name="setting_app_lock_timeout_five_minutes">After 5 minutes</string>
+    <string name="setting_app_lock_timeout_fifteen_minutes">After 15 minutes</string>
+    <string name="setting_hide_from_screenshots">Hide from screenshots and recents</string>
+    <string name="setting_hide_from_screenshots_description">Blocks screenshots and screen recording and blanks the app in the recent apps screen</string>
+    <string name="setting_blur_thumbnails">Blur thumbnails</string>
+    <string name="setting_blur_thumbnails_description">Blur post thumbnails until tapped. Tap once to reveal, tap again to open. Android 12+ blurs; older versions dim instead</string>
+    <string name="setting_material_you_theme">Material You theme</string>
+    <string name="setting_material_you_theme_description">Use colors from your wallpaper (Android 12+). Replaces the selected theme while enabled</string>
+    <string name="setting_material_you_theme_unsupported">Requires Android 12 or newer</string>
+    <string name="app_lock_locked_message">Vibeuroba is locked</string>
+    <string name="app_lock_prompt_title">Unlock Vibeuroba</string>
+    <string name="app_lock_pin_hint">PIN</string>
+    <string name="app_lock_unlock">Unlock</string>
+    <string name="app_lock_use_biometrics">Use fingerprint or face</string>
+    <string name="app_lock_use_pin">Use PIN</string>
+    <string name="app_lock_wrong_pin">Wrong PIN</string>
+    <string name="app_lock_too_many_attempts">Too many wrong attempts. Try again in %1$d s</string>
+    <string name="app_lock_create_pin">Create a Vibeuroba PIN</string>
+    <string name="app_lock_create_pin_description">4 to 12 digits. This is separate from your phone\'s PIN. If you forget it, you will have to clear the app\'s data.</string>
+    <string name="app_lock_confirm_pin">Enter the PIN again</string>
+    <string name="app_lock_enter_current_pin">Enter your current PIN</string>
+    <string name="app_lock_pin_invalid">The PIN must be %1$d to %2$d digits</string>
+    <string name="app_lock_pin_mismatch">The PINs don\'t match. App lock was not changed.</string>
+    <string name="app_lock_enabled_toast">App lock is on</string>
+    <string name="app_lock_disabled_toast">App lock is off</string>
+    <string name="app_lock_pin_changed_toast">PIN changed</string>
+    <string name="report_controller_report_shared_message">Report opened in the share sheet</string>
+
 </resources>

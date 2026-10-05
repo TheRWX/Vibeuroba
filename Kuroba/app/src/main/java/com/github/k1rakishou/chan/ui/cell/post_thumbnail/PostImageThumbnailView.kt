@@ -6,6 +6,9 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
+import android.graphics.RenderEffect
+import android.graphics.Shader
+import android.os.Build
 import android.text.TextUtils
 import android.util.AttributeSet
 import android.view.animation.AccelerateDecelerateInterpolator
@@ -98,6 +101,7 @@ class PostImageThumbnailView @JvmOverloads constructor(
   private var segmentedCircleDrawable: SegmentedCircleDrawable? = null
   private var hasThirdEyeImageMaybe: Boolean = false
   private var nsfwMode: Boolean = false
+  private var blurred: Boolean = false
   private var alphaAnimator: ValueAnimator? = null
 
   private val prefetchStateManager: PrefetchStateManager
@@ -138,6 +142,10 @@ class PostImageThumbnailView @JvmOverloads constructor(
     }
 
     this.nsfwMode = kurobaSettings.application.globalNsfwMode.readBlocking()
+    updateBlur(
+      blur = kurobaSettings.application.blurThumbnails.readBlocking() &&
+        blurKey(postImage) !in revealedBlurredThumbnails
+    )
     this.prefetchingEnabled = kurobaSettings.application.prefetchMedia.readBlocking()
 
     listenForNsfwSettingUpdates()
@@ -161,6 +169,7 @@ class PostImageThumbnailView @JvmOverloads constructor(
     thumbnailViewOptions = null
     canUseHighResCells = false
     hasThirdEyeImageMaybe = false
+    updateBlur(blur = false)
 
     runOrStopGlowAnimation(stop = true)
 
@@ -193,7 +202,16 @@ class PostImageThumbnailView @JvmOverloads constructor(
   }
 
   override fun setImageClickListener(token: String, listener: OnClickListener?) {
-    this.setOnThrottlingClickListener(token, listener)
+    if (listener == null) {
+      this.setOnThrottlingClickListener(token, null)
+      return
+    }
+
+    this.setOnThrottlingClickListener(token) { view ->
+      if (!revealIfBlurred()) {
+        listener.onClick(view)
+      }
+    }
   }
 
   override fun setImageLongClickListener(token: String, listener: OnLongClickListener?) {
@@ -205,7 +223,46 @@ class PostImageThumbnailView @JvmOverloads constructor(
   }
 
   fun onThumbnailViewClicked(listener: OnClickListener) {
+    if (revealIfBlurred()) {
+      return
+    }
+
     thumbnail.onThumbnailViewClicked(listener)
+  }
+
+  /**
+   * Vibeuroba "Blur thumbnails": the first tap on a blurred thumbnail reveals it (for the rest of the
+   * session) instead of opening it. Returns true when the tap was consumed by revealing.
+   */
+  private fun revealIfBlurred(): Boolean {
+    val chanPostImage = postImage
+    if (!blurred || chanPostImage == null) {
+      return false
+    }
+
+    revealedBlurredThumbnails += blurKey(chanPostImage)
+    updateBlur(blur = false)
+    return true
+  }
+
+  private fun updateBlur(blur: Boolean) {
+    if (blurred == blur) {
+      return
+    }
+
+    blurred = blur
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      thumbnail.setRenderEffect(
+        if (blur) {
+          RenderEffect.createBlurEffect(BLUR_RADIUS, BLUR_RADIUS, Shader.TileMode.CLAMP)
+        } else {
+          null
+        }
+      )
+    }
+
+    invalidate()
   }
 
   fun onThumbnailViewLongClicked(listener: OnLongClickListener): Boolean {
@@ -553,7 +610,8 @@ class PostImageThumbnailView @JvmOverloads constructor(
       return
     }
 
-    if (nsfwMode) {
+    // RenderEffect blur needs Android 12+, older versions dim blurred thumbnails like NSFW mode does.
+    if (nsfwMode || (blurred && Build.VERSION.SDK_INT < Build.VERSION_CODES.S)) {
       canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), nsfwModePaint)
     }
 
@@ -617,6 +675,14 @@ class PostImageThumbnailView @JvmOverloads constructor(
     private val OMITTED_FILES_INDICATOR_PADDING = dp(4f)
     private val playIcon = getDrawable(R.drawable.ic_play_circle_outline_white_24dp)
     private val glowInterpolator = AccelerateDecelerateInterpolator()
+    private val BLUR_RADIUS = dp(16f).toFloat()
+
+    // Thumbnails revealed by tapping while "Blur thumbnails" is on. Session-only, accessed on the main thread.
+    private val revealedBlurredThumbnails = mutableSetOf<String>()
+
+    private fun blurKey(postImage: ChanPostImage): String {
+      return postImage.imageUrl?.toString() ?: postImage.serverFilename
+    }
 
     private val nsfwModePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
       color = ColorUtils.setAlphaComponent(Color.DKGRAY, 225)

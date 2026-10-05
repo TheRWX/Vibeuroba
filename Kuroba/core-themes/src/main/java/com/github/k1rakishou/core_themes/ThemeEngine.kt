@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.drawable.Drawable
+import android.os.Build
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.AttrRes
@@ -18,6 +19,7 @@ import androidx.core.graphics.drawable.DrawableCompat
 import com.github.k1rakishou.core_logger.Logger
 import com.github.k1rakishou.core_themes.colors.HSL
 import com.github.k1rakishou.core_themes.themes.Kuroneko
+import com.github.k1rakishou.core_themes.themes.MaterialYouTheme
 import com.github.k1rakishou.core_themes.themes.Shironeko
 import com.github.k1rakishou.fsaf.file.ExternalFile
 import com.github.k1rakishou.v2.KurobaSettings
@@ -62,6 +64,8 @@ open class ThemeEngine(
     private set
 
   private val halloweenTheme by lazy { HalloweenTheme() }
+  private var materialYouDarkTheme: ChanTheme? = null
+  private var materialYouLightTheme: ChanTheme? = null
 
   lateinit var chanTheme: ChanTheme
     private set
@@ -72,6 +76,11 @@ open class ThemeEngine(
 
     defaultDarkTheme = Kuroneko()
     defaultLightTheme = Shironeko()
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && kurobaSettings.application.materialYouTheme.read()) {
+      materialYouDarkTheme = MaterialYouTheme.dark(context)
+      materialYouLightTheme = MaterialYouTheme.light(context)
+    }
 
     actualDarkTheme = themeParser.readThemeFromDisk(defaultDarkTheme)
     actualLightTheme = themeParser.readThemeFromDisk(defaultLightTheme)
@@ -104,7 +113,7 @@ open class ThemeEngine(
   }
 
   fun lightTheme(): ChanTheme {
-    val overrideTheme = tryOverrideTheme()
+    val overrideTheme = tryOverrideTheme(isDarkTheme = false)
     if (overrideTheme != null) {
       return overrideTheme
     }
@@ -113,7 +122,7 @@ open class ThemeEngine(
   }
 
   fun darkTheme(): ChanTheme {
-    val overrideTheme = tryOverrideTheme()
+    val overrideTheme = tryOverrideTheme(isDarkTheme = true)
     if (overrideTheme != null) {
       return overrideTheme
     }
@@ -121,7 +130,12 @@ open class ThemeEngine(
     return actualDarkTheme ?: defaultDarkTheme
   }
 
-  private fun tryOverrideTheme(): ChanTheme? {
+  private fun tryOverrideTheme(isDarkTheme: Boolean): ChanTheme? {
+    val materialYouTheme = if (isDarkTheme) materialYouDarkTheme else materialYouLightTheme
+    if (materialYouTheme != null) {
+      return materialYouTheme
+    }
+
     if (isHalloweenToday) {
       return halloweenTheme
     }
