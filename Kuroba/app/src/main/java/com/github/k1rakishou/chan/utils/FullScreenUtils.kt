@@ -1,6 +1,5 @@
 package com.github.k1rakishou.chan.utils
 
-import android.view.View
 import android.view.Window
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -18,29 +17,14 @@ object FullScreenUtils {
   }
 
   fun Window.setupStatusAndNavBarColors(theme: ChanTheme) {
-    var newSystemUiVisibility = decorView.systemUiVisibility
-
-    newSystemUiVisibility = when {
-      theme.lightStatusBar -> {
-        newSystemUiVisibility and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
-      }
-      else -> {
-        newSystemUiVisibility or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-      }
-    }
+    // ChanTheme.lightStatusBar/lightNavBar mean "light icons" (dark bar content off), the opposite of
+    // isAppearanceLight*Bars. Replaces the systemUiVisibility flags deprecated since API 30.
+    val controller = WindowInsetsControllerCompat(this, decorView)
+    controller.isAppearanceLightStatusBars = !theme.lightStatusBar
 
     if (AndroidUtils.isAndroidO) {
-      newSystemUiVisibility = when {
-        theme.lightNavBar -> {
-          newSystemUiVisibility and View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR.inv()
-        }
-        else -> {
-          newSystemUiVisibility or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
-        }
-      }
+      controller.isAppearanceLightNavigationBars = !theme.lightNavBar
     }
-
-    decorView.systemUiVisibility = newSystemUiVisibility
   }
 
 }

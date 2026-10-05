@@ -226,9 +226,12 @@
             </intent-filter>
         </receiver>
 
+        <!-- Debug-only entry point (adb shell am broadcast). DUMP is held by adb/shell and the system, never by
+             regular apps, so other apps can't trigger thread dumps. -->
         <receiver
             android:name=".core.receiver.DiagnosticsBroadcastReceiver"
-            android:exported="true">
+            android:exported="true"
+            android:permission="android.permission.DUMP">
             <intent-filter>
                 <action android:name="com.github.k1rakishou.chan.perform_thread_stack_dump"/>
             </intent-filter>

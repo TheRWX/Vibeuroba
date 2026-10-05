@@ -571,8 +571,9 @@ class KurobaAppUpdateManager(
     responseRelease: UpdateApiRequest.ApkReleaseInfo,
     onUpdateClicked: () -> Unit
   ) {
-    if (AndroidUtils.isAndroidT) {
-      // Can't request WRITE_EXTERNAL_STORAGE on API 33+
+    if (AndroidUtils.isAndroidN) {
+      // Vibeuroba: Android 7+ installs from app-private storage (PackageInstaller session, or a FileProvider uri as
+      // fallback), so storage permission is only needed for the Android 6 path that copies the APK to Downloads.
       doUpdate(responseRelease, onUpdateClicked)
       return
     }

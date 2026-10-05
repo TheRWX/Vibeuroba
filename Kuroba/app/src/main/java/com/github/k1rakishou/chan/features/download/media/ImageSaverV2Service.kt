@@ -12,6 +12,7 @@ import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.app.ServiceCompat
 import com.github.k1rakishou.chan.Chan
 import com.github.k1rakishou.chan.R
 import com.github.k1rakishou.chan.core.concurrency.KeyBasedSerializedCoroutineExecutor
@@ -90,7 +91,7 @@ class ImageSaverV2Service : Service() {
                 delay(1000L)
 
                 Logger.d(TAG, "Stopping the service")
-                stopForeground(true)
+                ServiceCompat.stopForeground(this@ImageSaverV2Service, ServiceCompat.STOP_FOREGROUND_REMOVE)
                 stopSelf()
               }
             }
@@ -101,6 +102,14 @@ class ImageSaverV2Service : Service() {
           }
         }
     }
+  }
+
+  // Android 15+: dataSync foreground services get ~6 hours per day. When that runs out the system calls this and
+  // crashes the app unless the service stops within a few seconds.
+  override fun onTimeout(startId: Int, fgsType: Int) {
+    Logger.e(TAG, "onTimeout() dataSync time limit reached, stopping (startId=$startId, fgsType=$fgsType)")
+    ServiceCompat.stopForeground(this@ImageSaverV2Service, ServiceCompat.STOP_FOREGROUND_REMOVE)
+    stopSelf()
   }
 
   override fun onDestroy() {
@@ -114,21 +123,38 @@ class ImageSaverV2Service : Service() {
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     if (intent == null) {
+      // Sticky restart after process death: there is no request to resume, so don't linger.
+      stopSelf(startId)
       return START_NOT_STICKY
     }
 
     if (AndroidUtils.isAndroidQ) {
-      startForeground(
-        NotificationConstants.IMAGE_SAVER_WORKER_NOTIFICATION_ID,
-        createServiceNotification(),
-        FOREGROUND_SERVICE_TYPE_DATA_SYNC
-      )
+      try {
+        startForeground(
+          NotificationConstants.IMAGE_SAVER_WORKER_NOTIFICATION_ID,
+          createServiceNotification(),
+          FOREGROUND_SERVICE_TYPE_DATA_SYNC
+        )
+      } catch (error: Exception) {
+        // Android 12+ refuses foreground starts from the background, and Android 15 refuses dataSync once its
+        // daily time limit is used up (ForegroundServiceStartNotAllowedException). Don't crash the app.
+        Logger.e(TAG, "onStartCommand() startForeground() not allowed", error)
+        stopSelf(startId)
+        return START_NOT_STICKY
+      }
     }
 
     kurobaScope.launch {
       val imageSaverInputData = convertInputData(intent)
       if (imageSaverInputData == null) {
         Logger.d(TAG, "onStartCommand() convertInputData() failed")
+
+        // Nothing to download: don't keep an idle foreground service (and its notification) around.
+        if (imageSaverV2ServiceDelegate.get().activeDownloadsCount() == 0) {
+          ServiceCompat.stopForeground(this@ImageSaverV2Service, ServiceCompat.STOP_FOREGROUND_REMOVE)
+          stopSelf(startId)
+        }
+
         return@launch
       }
 

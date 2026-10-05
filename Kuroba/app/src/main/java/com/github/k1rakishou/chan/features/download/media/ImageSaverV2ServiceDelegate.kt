@@ -168,6 +168,10 @@ class ImageSaverV2ServiceDelegate(
     _downloadingImagesFlow.emit(downloadingImageState)
   }
 
+  suspend fun activeDownloadsCount(): Int {
+    return mutex.withLock { activeDownloads.size }
+  }
+
   suspend fun createDownloadContext(uniqueId: String): Int {
     return mutex.withLock {
       if (!activeDownloads.containsKey(uniqueId)) {

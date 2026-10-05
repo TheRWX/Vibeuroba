@@ -12,6 +12,8 @@ import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.app.ServiceCompat
+import androidx.core.content.IntentCompat
 import com.github.k1rakishou.chan.Chan
 import com.github.k1rakishou.chan.R
 import com.github.k1rakishou.chan.core.concurrency.KurobaCoroutineScope
@@ -57,7 +59,7 @@ class PostingService : Service() {
         .collect {
           Logger.d(TAG, "Got StopService command, stopping the service")
 
-          stopForeground(true)
+          ServiceCompat.stopForeground(this@PostingService, ServiceCompat.STOP_FOREGROUND_REMOVE)
           stopSelf()
         }
     }
@@ -112,6 +114,14 @@ class PostingService : Service() {
     }
   }
 
+  // Android 15+: dataSync foreground services get ~6 hours per day. When that runs out the system calls this and
+  // crashes the app unless the service stops within a few seconds.
+  override fun onTimeout(startId: Int, fgsType: Int) {
+    Logger.e(TAG, "onTimeout() dataSync time limit reached, stopping (startId=$startId, fgsType=$fgsType)")
+    ServiceCompat.stopForeground(this@PostingService, ServiceCompat.STOP_FOREGROUND_REMOVE)
+    stopSelf()
+  }
+
   override fun onDestroy() {
     super.onDestroy()
 
@@ -122,18 +132,27 @@ class PostingService : Service() {
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     if (intent == null) {
       Logger.e(TAG, "onStartCommand() intent == null")
+      stopSelf(startId)
       return START_NOT_STICKY
     }
 
     if (AndroidUtils.isAndroidQ) {
-      startForeground(
-        NotificationConstants.POSTING_SERVICE_NOTIFICATION_ID,
-        createMainNotification(mainNotificationInfo = null),
-        FOREGROUND_SERVICE_TYPE_DATA_SYNC
-      )
+      try {
+        startForeground(
+          NotificationConstants.POSTING_SERVICE_NOTIFICATION_ID,
+          createMainNotification(mainNotificationInfo = null),
+          FOREGROUND_SERVICE_TYPE_DATA_SYNC
+        )
+      } catch (error: Exception) {
+        // Android 12+ refuses foreground starts from the background, and Android 15 refuses dataSync once its
+        // daily time limit is used up (ForegroundServiceStartNotAllowedException). Don't crash the app.
+        Logger.e(TAG, "onStartCommand() startForeground() not allowed", error)
+        stopSelf(startId)
+        return START_NOT_STICKY
+      }
     }
 
-    val chanDescriptor = intent.getParcelableExtra<DescriptorParcelable>(REPLY_CHAN_DESCRIPTOR)
+    val chanDescriptor = IntentCompat.getParcelableExtra(intent, REPLY_CHAN_DESCRIPTOR, DescriptorParcelable::class.java)
       ?.toChanDescriptor()
     val replyMode = ReplyMode.fromString(intent.getStringExtra(REPLY_MODE))
     val retrying = intent.getBooleanExtra(RETRYING, false)
