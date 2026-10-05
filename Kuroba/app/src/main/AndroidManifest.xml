@@ -13,6 +13,8 @@
     <uses-permission android:name="android.permission.VIBRATE"/>
 
     <uses-permission-sdk-23 android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- Vibeuroba: lets the in-app updater install its own updates without a prompt on Android 12+. -->
+    <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
 
     <queries>
         <intent>
@@ -210,6 +212,19 @@
         <receiver
             android:name=".core.receiver.PostingServiceBroadcastReceiver"
             android:exported="false" />
+
+        <!-- Vibeuroba self-update: install session results and the post-update notification. -->
+        <receiver
+            android:name=".core.receiver.ApkInstallStatusReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".core.receiver.AppUpdatedReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
         <receiver
             android:name=".core.receiver.DiagnosticsBroadcastReceiver"

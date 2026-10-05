@@ -1771,5 +1771,9 @@ Actual error: \'%1$s\'</string>
     <string name="app_lock_disabled_toast">App lock is off</string>
     <string name="app_lock_pin_changed_toast">PIN changed</string>
     <string name="report_controller_report_shared_message">Report opened in the share sheet</string>
+    <string name="update_install_failed_toast">Vibeuroba update failed: %1$s</string>
+    <string name="update_installed_channel_name">App updates</string>
+    <string name="update_installed_title">Vibeuroba updated to %1$s</string>
+    <string name="update_installed_text">Tap to open</string>
 
 </resources>

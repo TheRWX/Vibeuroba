@@ -487,6 +487,16 @@ class KurobaAppUpdateManager(
 
     cancelApkUpdateNotification()
 
+    // Vibeuroba: install through a PackageInstaller session so updates need at most one confirmation tap (none on
+    // Android 12+ once Vibeuroba installed itself). Fall back to the system installer screen if that fails.
+    try {
+      ApkSessionInstaller.install(context, apkFile)
+      onUpdateClicked()
+      return
+    } catch (error: Throwable) {
+      Logger.e(TAG, "installApk() session install failed, falling back to ACTION_INSTALL_PACKAGE", error)
+    }
+
     try {
       val intent = if (AndroidUtils.isAndroidN) {
         Logger.d(TAG, "installApk() AndroidN and above, apkFile=${apkFile.absolutePath}")
