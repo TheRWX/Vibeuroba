@@ -481,6 +481,13 @@ class ThreadSlideController(
       TransitionMode.Out
     }
 
+    if (getToolbarState(slidingPaneLayoutOpenState.invert()).topToolbar == null) {
+      // The other side's controller hasn't initialized its toolbar yet (e.g. a thread that is still opening).
+      // Skip the animated toolbar transition instead of crashing; finishToolbarTransition() still swaps toolbars.
+      Logger.e(TAG, "startToolbarTransition() target toolbar is not initialized, skipping transition")
+      return
+    }
+
     val owner = containerToolbarState
     if (owner.transitionToolbarState.value is KurobaToolbarTransition.Progress) {
       // A dangling transition left by someone else, it would crash onTransitionProgressStart()

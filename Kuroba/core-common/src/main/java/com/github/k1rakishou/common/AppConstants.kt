@@ -28,7 +28,10 @@ open class AppConstants(
   val filterWatchWorkUniqueTag = "FilterWatcherController"
   val threadDownloadWorkUniqueTag = "ThreadDownloadController"
 
-  val userAgentMightBeOverridden by lazy {
+  // PUBLICATION: never hold a lock while WebSettings.getDefaultUserAgent() runs. Off the main
+  // thread it waits for WebView startup on the main thread, so a lock here deadlocks (ANR) when
+  // the main thread asks for the user agent while the background preload is still running.
+  val userAgentMightBeOverridden by lazy(LazyThreadSafetyMode.PUBLICATION) {
     val overriddenUserAgent = overrideUserAgent()
     if (overriddenUserAgent.isNotBlank()) {
       Logger.d(TAG, "userAgent() Using overridden user agent: \'${overriddenUserAgent}\'")
