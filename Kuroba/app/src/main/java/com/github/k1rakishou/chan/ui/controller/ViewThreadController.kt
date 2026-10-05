@@ -316,7 +316,9 @@ open class ViewThreadController(
   }
 
   override fun threadBackLongPressed() {
-    threadFollowHistoryManager.clearAllExcept(threadDescriptor)
+    // The stack only holds threads we came from (OpenExternalThreadHelper pushes the current thread before
+    // leaving it). Keeping the current thread here made the next back "return" to the thread already open.
+    threadFollowHistoryManager.clear()
     showToast(R.string.thread_follow_history_has_been_cleared)
   }
 
