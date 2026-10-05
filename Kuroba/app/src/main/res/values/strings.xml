@@ -1775,5 +1775,6 @@ Actual error: \'%1$s\'</string>
     <string name="update_installed_channel_name">App updates</string>
     <string name="update_installed_title">Vibeuroba updated to %1$s</string>
     <string name="update_installed_text">Tap to open</string>
+    <string name="action_clear_thread_follow_history">Clear thread history</string>
 
 </resources>

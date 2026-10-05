@@ -4,9 +4,11 @@ import android.app.Activity
 import android.app.ActivityManager
 import android.content.res.Configuration
 import android.graphics.BitmapFactory
+import android.os.Bundle
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.ViewGroup
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import com.github.k1rakishou.chan.R
 import com.github.k1rakishou.chan.core.di.module.activity.ActivityScopedViewModelFactory
@@ -102,13 +104,22 @@ abstract class ControllerHostActivity :
     }
   }
 
-  @Deprecated("Deprecated in Java")
-  override fun onBackPressed() {
-    if (stack.peek().onBack()) {
-      return
-    }
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
 
-    super.onBackPressed()
+    // Vibeuroba targets SDK 36, where predictive back is on and onBackPressed() is no longer called. Route back
+    // through the dispatcher: the top controller handles it first, otherwise fall back to the default behaviour.
+    onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+      override fun handleOnBackPressed() {
+        if (stack.isNotEmpty() && stack.peek().onBack()) {
+          return
+        }
+
+        isEnabled = false
+        onBackPressedDispatcher.onBackPressed()
+        isEnabled = true
+      }
+    })
   }
 
   fun pushControllerIntoStack(controller: Controller) {
