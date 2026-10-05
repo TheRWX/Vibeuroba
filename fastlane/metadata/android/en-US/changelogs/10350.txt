@@ -1,0 +1,4 @@
+v1.3.50 (Vibeuroba 1.2)
+- Targets Android 16: predictive back gestures (swipe back shows where you're going).
+- "Clear thread history" is now in a thread's menu (it used to be a long press of the back button, which Android 16 no longer supports).
+- Built-in images and the theme gallery are now served from Vibeuroba's own repository.
