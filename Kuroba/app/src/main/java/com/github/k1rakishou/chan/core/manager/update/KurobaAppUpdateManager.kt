@@ -390,7 +390,7 @@ class KurobaAppUpdateManager(
 
   private fun failedUpdate(manual: Boolean, error: Throwable) {
     Logger.e(TAG, "failedUpdate() manual=$manual, error: ${error.errorMessageOrClassName()}")
-    val manualUpdateUrl = "https://github.com/K1rakishou/Kuroba-Experimental/releases/latest"
+    val manualUpdateUrl = "https://github.com/TheRWX/Vibeuroba/releases/latest"
 
     if (manual) {
       dialogFactory.showDialog(

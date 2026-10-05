@@ -702,7 +702,7 @@ class CrashReportActivity :
   companion object {
     private const val TAG = "CrashReportActivity"
 
-    private const val ISSUES_LINK = "https://github.com/K1rakishou/Kuroba-Experimental/issues"
+    private const val ISSUES_LINK = "https://github.com/TheRWX/Vibeuroba/issues"
 
     private val BACKUP_DATE_FORMAT = DateTimeFormatterBuilder()
       .append(ISODateTimeFormat.date())

@@ -42,6 +42,6 @@ class LoadChangelogUseCase(
   companion object {
     @Suppress("MaxLineLength")
     private const val BASE_CHANGELOGS_URL =
-      "https://raw.githubusercontent.com/K1rakishou/Kuroba-Experimental/develop/fastlane/metadata/android/en-US/changelogs"
+      "https://raw.githubusercontent.com/TheRWX/Vibeuroba/vibeuroba-1.0/fastlane/metadata/android/en-US/changelogs"
   }
 }

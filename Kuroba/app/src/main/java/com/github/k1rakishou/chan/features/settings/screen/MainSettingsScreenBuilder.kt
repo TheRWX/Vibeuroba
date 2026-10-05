@@ -227,7 +227,7 @@ class MainSettingsScreenBuilder(
           composeKey = "FindAppOnGithub",
           title = { appResources.string(R.string.settings_find_app_on_github, AndroidUtils.applicationLabel) },
           description = { appResources.string(R.string.settings_find_app_on_github_bottom) },
-          callback = { settingActions.openUrl("https://github.com/K1rakishou/Kuroba-Experimental") }
+          callback = { settingActions.openUrl("https://github.com/TheRWX/Vibeuroba") }
         )
       )
 

@@ -1,5 +1,16 @@
-A bunch of fixes and improvements (mostly vibe-coded + human reviewed).
+v1.3.47 (Vibeuroba 1.1), based on KurobaEx v1.3.47
+Vibeuroba:
+- Rebuilt on the current KurobaEx release (v1.3.47) instead of the 2024 development branch.
+- App lock with your own Vibeuroba PIN, optional fingerprint/face (Settings > Security > Privacy).
+- Hide from screenshots and recents (Settings > Security > Privacy).
+- Blur thumbnails until tapped (Settings > Appearance > Images).
+- Material You theme from your wallpaper colors, Android 12+ (Settings > Appearance).
+- Bug reports open the share sheet; nothing is uploaded.
+- Fix a freeze (ANR) while the app looks up the WebView user agent at startup.
+- Fix a crash when sliding to a thread whose toolbar isn't ready yet.
+- Installs over Vibeuroba 1.0 (same app ID and signing key). Needs Android 6.0+.
 
+From KurobaEx v1.3.47:
 - Preserve nested quote and link colors (Thanks to @arpitagarwal1301)
 - Sound posts reimplementation. Audio is now played by a separate player (in sync with the video/image) and it also works with mpv.
 - Pass request headers into video requests. Should fix mpv not being able to play files on sites that require them.

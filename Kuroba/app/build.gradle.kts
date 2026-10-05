@@ -49,7 +49,8 @@ android {
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
 
-        applicationId = "com.github.k1rakishou.chan"
+        // Vibeuroba: independent install identity; the source namespace stays com.github.k1rakishou.chan.
+        applicationId = "com.github.therwx.vibeuroba"
         applicationIdSuffix = ""
         buildConfigField("String", "BUILD_TYPE", "\"${kurobaBuildType.name}\"")
         // The commit hash changes with every commit which regenerates BuildConfig (and recompiles everything that uses
@@ -65,15 +66,15 @@ android {
 
         when (kurobaBuildType) {
           KurobaBuildType.Stable -> {
-              manifestPlaceholders["appName"] = "KurobaEx"
+              manifestPlaceholders["appName"] = "Vibeuroba"
               manifestPlaceholders["iconLoc"] = "@mipmap/ic_launcher_release"
           }
           KurobaBuildType.Beta -> {
-              manifestPlaceholders["appName"] = "KurobaEx-beta"
+              manifestPlaceholders["appName"] = "Vibeuroba-beta"
               manifestPlaceholders["iconLoc"] = "@mipmap/ic_launcher_beta"
           }
           KurobaBuildType.Dev -> {
-              manifestPlaceholders["appName"] = "KurobaEx-dev"
+              manifestPlaceholders["appName"] = "Vibeuroba-dev"
               manifestPlaceholders["iconLoc"] = "@mipmap/ic_launcher_dev"
           }
         }
@@ -82,8 +83,10 @@ android {
         //            m -> Minor version
         //            p -> patch
         //            MmmPP
+        // Vibeuroba release tags are vM.m.p = versionCode MmmPP (the updater parses the tag). Must stay above
+        // the last Vibeuroba release (10336). Based on KurobaEx v1.3.47.
         versionCode = 10347
-        versionName = "v1.3.47"
+        versionName = "1.1"
 
         configurations.configureEach {
             resolutionStrategy {
@@ -109,6 +112,8 @@ android {
                 keyPassword = props["keyPass"] as String
                 enableV1Signing = true
                 enableV2Signing = true
+                // v3 allows rotating the Vibeuroba release key later without breaking updates.
+                enableV3Signing = true
             }
         }
 
@@ -177,7 +182,7 @@ android {
                 val abi = output.getFilter("ABI") ?: ""
 
                 output.outputFileName = buildString {
-                    append("KurobaEx")
+                    append("Vibeuroba")
 
                     if (apkNameSuffix.isNotEmpty()) {
                         append("-")

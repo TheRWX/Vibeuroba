@@ -30,7 +30,7 @@ class UpdateApiRequest(
   suspend fun execute(): ModularResult<ApkReleaseInfo> {
     return ModularResult.Try {
       val request = Request.Builder()
-        .url("https://api.github.com/repos/K1rakishou/Kuroba-Experimental/releases")
+        .url("https://api.github.com/repos/TheRWX/Vibeuroba/releases")
         .get()
         .build()
 
