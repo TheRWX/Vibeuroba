@@ -142,7 +142,7 @@ class ReportManager(
       appendLine("mediaViewerMaxOffscreenPages: ${kurobaSettings.application.mediaViewerMaxOffscreenPages.readBlocking()}")
       appendLine("useMpvVideoPlayer: ${kurobaSettings.application.useMpvVideoPlayer.readBlocking()}")
       appendLine("userAgent: ${userAgent}")
-      appendLine("kurobaExCustomUserAgent: ${appConstants.kurobaExCustomUserAgent}")
+      appendLine("customUserAgent: ${appConstants.kurobaExCustomUserAgent}")
 
       appendLine("maxPostsCountInPostsCache: ${appConstants.maxPostsCountInPostsCache}")
       appendLine("maxAmountOfPostsInDatabase: ${appConstants.maxAmountOfPostsInDatabase}")
@@ -240,7 +240,7 @@ class ReportManager(
         return ReportRequest(
           title = title,
           body = body,
-          labels = listOf("KurobaEx", "New", "Crash")
+          labels = listOf("Vibeuroba", "New", "Crash")
         )
       }
 
@@ -248,7 +248,7 @@ class ReportManager(
         return ReportRequest(
           title = title,
           body = body,
-          labels = listOf("KurobaEx", "New", "Report")
+          labels = listOf("Vibeuroba", "New", "Report")
         )
       }
 
