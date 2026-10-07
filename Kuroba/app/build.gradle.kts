@@ -179,7 +179,10 @@ android {
                   KurobaBuildType.Beta -> "beta"
                   KurobaBuildType.Dev -> "dev"
                 }
-                val abi = output.getFilter("ABI") ?: ""
+                // Release builds also produce one APK per ABI. The universal one is named "-all" so it sorts
+                // first among the GitHub release assets: the Vibeuroba 1.0 updater downloads the first asset.
+                val abi = output.getFilter("ABI")
+                    ?: if (variant.buildType.name == "release") "all" else ""
 
                 output.outputFileName = buildString {
                     append("Vibeuroba")

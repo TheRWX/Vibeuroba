@@ -61,7 +61,7 @@ are signed with the Vibeuroba release key; verify the certificate before
 installing:
 
 ```sh
-apksigner verify --print-certs Vibeuroba.apk
+apksigner verify --print-certs Vibeuroba-all.apk
 # Signer #1 certificate SHA-256 digest:
 # ba568a31fb051b24447636cbc2f730a2a56c02e5328985d0ea9c129dc86161de
 ```
@@ -102,8 +102,11 @@ The build type is chosen with the `buildType` property (`0` stable, `1` beta,
 ```
 
 Release builds read the signing key from an untracked `Kuroba/app/release.properties`.
-Release builds produce per-ABI APKs plus a universal APK. Attach the universal APK
-first on GitHub releases: Vibeuroba 1.0's updater downloads the first APK asset.
+Release builds produce per-ABI APKs plus a universal APK named `Vibeuroba-all.apk`.
+Attach all of them to the GitHub release, universal APK first. GitHub lists assets
+alphabetically and `-all` sorts first, which matters because Vibeuroba 1.0's updater
+downloads the first APK asset. Later versions pick the APK matching the device's ABI
+and fall back to the universal one.
 
 ## Screenshots
 

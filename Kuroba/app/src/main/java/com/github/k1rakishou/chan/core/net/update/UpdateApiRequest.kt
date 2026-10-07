@@ -124,28 +124,12 @@ class UpdateApiRequest(
       throw UpdateRequestError("No APK URL!")
     }
 
-    var apkUrl: HttpUrl? = null
+    val apkIndex = ReleaseHelpers.selectApkIndex(
+      apkFileNames = apkUrls.map { apkUrl -> apkUrl.pathSegments.last() },
+      supportedAbis = supportedAbis.toList()
+    ) ?: throw UpdateRequestError("No APK URL!")
 
-    for (abi in supportedAbis) {
-      apkUrl = apkUrls.firstOrNull { apkUrl ->
-        val apkFileName = apkUrl.pathSegments.last()
-        return@firstOrNull apkFileName.contains(abi, ignoreCase = true)
-      }
-
-      if (apkUrl != null) {
-        // Found apk for the current ABI
-        break
-      }
-    }
-
-    if (apkUrl == null) {
-      Logger.warning(TAG) {
-        "Failed to find an apk for abis: '${supportedAbis.joinToString()}', " +
-          "using the last one (should be universal apk)"
-      }
-
-      apkUrl = apkUrls.last()
-    }
+    val apkUrl = apkUrls[apkIndex]
 
     Logger.debug(TAG) { "Got apkUrl: '${apkUrl}'" }
     return apkUrl
