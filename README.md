@@ -102,8 +102,8 @@ The build type is chosen with the `buildType` property (`0` stable, `1` beta,
 ```
 
 Release builds read the signing key from an untracked `Kuroba/app/release.properties`.
-Release builds produce per-ABI APKs plus a universal APK. Attach the universal APK
-first on GitHub releases: Vibeuroba 1.0's updater downloads the first APK asset.
+Release builds produce a single universal `Vibeuroba.apk` (no per-ABI splits). Attach only
+that file to GitHub releases; every shipped updater accepts a lone asset.
 
 ## Screenshots
 
