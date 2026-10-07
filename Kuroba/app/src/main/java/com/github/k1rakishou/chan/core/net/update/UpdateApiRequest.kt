@@ -78,7 +78,14 @@ class UpdateApiRequest(
         continue
       }
 
-      val versionCode = readVersionCode(release)
+      // A release with a tag that can't be parsed shouldn't break the update check for every release after it
+      val versionCode = try {
+        readVersionCode(release)
+      } catch (error: UpdateRequestError) {
+        Logger.error(TAG) { "Skipping release '${tagName}': ${error.message}" }
+        null
+      }
+
       if (versionCode == null) {
         continue
       }

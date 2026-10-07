@@ -9,6 +9,12 @@ class ReleaseHelpersTest {
     fun testReleaseVersionCalculation() {
         assertEquals(0, ReleaseHelpers.calculateReleaseVersionCode("123"))
         assertEquals(10332, ReleaseHelpers.calculateReleaseVersionCode("v1.3.32-release"))
+
+        // Vibeuroba tags (v1.3.47 - v1.3.50 were published without the "-release" suffix)
+        assertEquals(10350, ReleaseHelpers.calculateReleaseVersionCode("v1.3.50"))
+        assertEquals(10351, ReleaseHelpers.calculateReleaseVersionCode("v1.3.51-release"))
+        assertEquals(0, ReleaseHelpers.calculateReleaseVersionCode("v1.3.51-beta"))
+        assertEquals(0, ReleaseHelpers.calculateReleaseVersionCode("v1.3.51.1-beta"))
     }
 
     @Test
