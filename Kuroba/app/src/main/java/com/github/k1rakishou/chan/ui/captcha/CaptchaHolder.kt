@@ -77,6 +77,19 @@ class CaptchaHolder(
     return true
   }
 
+  /**
+   * How much time is left until the solution that is going to be used next (the oldest one) expires, or null if
+   * there are no saved solutions.
+   * */
+  fun nextSolutionRemainingMillis(): Long? {
+    synchronized(captchaQueue) {
+      val nextCaptcha = captchaQueue.lastOrNull()
+        ?: return null
+
+      return (nextCaptcha.validUntil - System.currentTimeMillis()).coerceAtLeast(0L)
+    }
+  }
+
   fun consumeCaptchaSolution(): CaptchaSolution? {
     BackgroundUtils.ensureMainThread()
     removeNotValidTokens()

@@ -8,7 +8,7 @@ class Kuroneko(
   isLightTheme: Boolean = false,
   lightStatusBar: Boolean = true,
   lightNavBar: Boolean = true,
-  accentColor: Int = Color.parseColor("#e0224e"),
+  accentColor: Int = Color.parseColor("#4fe0cb"),
   primaryColor: Int = Color.parseColor("#090909"),
   backColor: Int = Color.parseColor("#212121"),
   backColorSecondary: Int = Color.parseColor("#171717"),

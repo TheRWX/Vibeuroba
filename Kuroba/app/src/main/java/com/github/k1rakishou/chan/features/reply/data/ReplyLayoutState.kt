@@ -1274,17 +1274,13 @@ class ReplyLayoutState(
       }
       replyResponse.requireAuthentication -> {
         Logger.d(TAG, "onPostSendComplete(${chanDescriptor}) requireAuthentication os true replyResponse: $replyResponse")
-        onPostCompleteUnsuccessful(
+        // Open the captcha right away instead of making the user dismiss an error dialog first
+        showToast(appResources.string(R.string.reply_captcha_required))
+
+        callbacks.showCaptcha(
           chanDescriptor = chanDescriptor,
-          replyResponse = replyResponse,
-          additionalErrorMessage = null,
-          onDismissListener = {
-            callbacks.showCaptcha(
-              chanDescriptor = chanDescriptor,
-              replyMode = replyMode,
-              autoReply = true
-            )
-          }
+          replyMode = replyMode,
+          autoReply = true
         )
       }
       else -> {

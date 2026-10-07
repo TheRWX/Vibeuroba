@@ -661,7 +661,7 @@ class CrashReportActivity :
 
   private suspend fun exportToBackup(context: Context) {
     val dateString = BACKUP_DATE_FORMAT.print(DateTime.now())
-    val exportFileName = "KurobaEx_v${BuildConfig.VERSION_CODE}_($dateString)_backup.zip"
+    val exportFileName = "Vibeuroba_v${BuildConfig.VERSION_CODE}_($dateString)_backup.zip"
 
     val result = suspendCancellableCoroutine<Result<Uri>> { cancellableContinuation ->
       fileChooser.openCreateFileDialog(

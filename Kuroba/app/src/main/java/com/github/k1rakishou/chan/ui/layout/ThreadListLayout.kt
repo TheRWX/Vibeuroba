@@ -717,7 +717,8 @@ class ThreadListLayout @JvmOverloads constructor(
   ) {
     val controller = CaptchaContainerController(
       context = context,
-      chanDescriptor = chanDescriptor
+      chanDescriptor = chanDescriptor,
+      autoReply = autoReply
     ) { authenticationResult ->
       when (authenticationResult) {
         is CaptchaContainerController.AuthenticationResult.Failure -> {

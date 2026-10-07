@@ -145,6 +145,8 @@ class ReplyLayoutViewModel(
   val captchaHolderCaptchaCounterUpdatesFlow: Flow<Int>
     get() = captchaHolder.listenForCaptchaUpdates()
 
+  fun nextSavedCaptchaRemainingMillis(): Long? = captchaHolder.nextSolutionRemainingMillis()
+
   private val attachableMediaClickExecutor = ThrottleFirstCoroutineExecutor(viewModelScope)
   private val promptUserForMediaUrlExecutor = ThrottleFirstCoroutineExecutor(viewModelScope)
   private val flagSelectorClickExecutor = ThrottleFirstCoroutineExecutor(viewModelScope)

@@ -507,7 +507,7 @@ class KurobaAppUpdateManager(
           setDataAndType(apkUri, "application/vnd.android.package-archive")
         }
       } else {
-        val externalFileName = "KurobaEx-${responseRelease.versionCode}.apk"
+        val externalFileName = "Vibeuroba-${responseRelease.versionCode}.apk"
 
         val externalApkFile = File(
           Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),

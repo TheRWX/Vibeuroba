@@ -24,6 +24,7 @@ import javax.inject.Inject
 class CaptchaContainerController(
   context: Context,
   private val chanDescriptor: ChanDescriptor,
+  private val autoReply: Boolean = true,
   private val authenticationCallback: (AuthenticationResult) -> Unit
 ) : BaseFloatingController(context), AuthenticationLayoutCallback {
   private lateinit var authenticationLayout: AuthenticationLayoutInterface
@@ -130,6 +131,7 @@ class CaptchaContainerController(
         val view = Chan4CaptchaLayout(
           context = context,
           chanDescriptor = chanDescriptor,
+          autoReply = autoReply,
           presentControllerFunc = { controller -> presentController(controller) }
         )
 

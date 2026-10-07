@@ -576,7 +576,7 @@ class FiltersController(
 
   private fun exportFilters(toolbarMenuOverflowItem: ToolbarMenuOverflowItem) {
     val dateString = FILTER_DATE_FORMAT.print(DateTime.now())
-    val exportFileName = "KurobaEx_exported_filters_($dateString).json"
+    val exportFileName = "Vibeuroba_exported_filters_($dateString).json"
 
     fileChooser.openCreateFileDialog(exportFileName, object : FileCreateCallback() {
       override fun onCancel(reason: String) {

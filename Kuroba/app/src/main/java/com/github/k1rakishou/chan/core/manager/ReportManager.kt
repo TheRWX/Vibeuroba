@@ -142,7 +142,7 @@ class ReportManager(
       appendLine("mediaViewerMaxOffscreenPages: ${kurobaSettings.application.mediaViewerMaxOffscreenPages.readBlocking()}")
       appendLine("useMpvVideoPlayer: ${kurobaSettings.application.useMpvVideoPlayer.readBlocking()}")
       appendLine("userAgent: ${userAgent}")
-      appendLine("kurobaExCustomUserAgent: ${appConstants.kurobaExCustomUserAgent}")
+      appendLine("customUserAgent: ${appConstants.kurobaExCustomUserAgent}")
 
       appendLine("maxPostsCountInPostsCache: ${appConstants.maxPostsCountInPostsCache}")
       appendLine("maxAmountOfPostsInDatabase: ${appConstants.maxAmountOfPostsInDatabase}")

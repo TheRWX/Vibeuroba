@@ -76,6 +76,12 @@ class Chan4CaptchaLayoutViewModel(
   val captchaInfoToShow: State<AsyncUiData<CaptchaInfo>>
     get() = _captchaInfoToShow
 
+  // The captcha that was shown right before a new one started loading. It is kept (and displayed dimmed) so the
+  // screen doesn't go blank while the next challenge is being loaded.
+  private val _previousCaptchaInfo = mutableStateOf<CaptchaInfo?>(null)
+  val previousCaptchaInfo: State<CaptchaInfo?>
+    get() = _previousCaptchaInfo
+
   private val _captchaDataJson = mutableStateOf<String?>(null)
   val captchaDataJson: State<String?>
     get() = _captchaDataJson
@@ -107,10 +113,12 @@ class Chan4CaptchaLayoutViewModel(
     captchaTtlUpdateJob = null
 
     _captchaTtlMillisFlow.value = -1L
+    _previousCaptchaInfo.value = null
     chan4CaptchaNotifierManager.onCaptchaViewDestroyed()
   }
 
   fun resetCaptchaForced(chanDescriptor: ChanDescriptor) {
+    _previousCaptchaInfo.value = null
     _captchaInfoToShow.value = AsyncUiData.NotInitialized
     getCachedCaptchaInfoOrNull(chanDescriptor)?.reset()
 
@@ -137,6 +145,21 @@ class Chan4CaptchaLayoutViewModel(
 
     val prevCaptchaInfo = getCachedCaptchaInfoOrNull(chanDescriptor)
 
+    if (!forced && prevCaptchaInfo == null) {
+      // The screen was closed and then reopened while the captcha cooldown is still running. Restore the countdown
+      // instead of asking the server again.
+      val activeCooldownError = chan4CaptchaNotifierManager.activeCooldownError(chanDescriptor)
+      if (activeCooldownError != null) {
+        Logger.debug(TAG) { "requestCaptcha() restoring the active cooldown for ${chanDescriptor}" }
+
+        _previousCaptchaInfo.value = null
+        _captchaInfoToShow.value = AsyncUiData.Error(activeCooldownError as Throwable)
+        waitForCooldownAndReload(chanDescriptor)
+
+        return
+      }
+    }
+
     if (!forced
       && prevCaptchaInfo != null
       && prevCaptchaInfo.ttlMillis() > MIN_TTL_TO_NOT_REQUEST_NEW_CAPTCHA
@@ -155,6 +178,10 @@ class Chan4CaptchaLayoutViewModel(
         "forced: $forced, ttl: ${prevCaptchaInfo?.ttlMillis()}, " +
         "chanDescriptor: $chanDescriptor, mcl: ${mcl.asFormattedToken()})"
     }
+
+    _previousCaptchaInfo.value = (_captchaInfoToShow.value as? AsyncUiData.UiData)
+      ?.data
+      ?.takeIf { captchaInfo -> !captchaInfo.isNoopChallenge() }
 
     _captchaTtlMillisFlow.value = -1L
     getCachedCaptchaInfoOrNull(chanDescriptor)?.reset()
@@ -194,6 +221,7 @@ class Chan4CaptchaLayoutViewModel(
           Logger.d(TAG, "requestCaptcha() success")
 
           captchaInfoCache[chanDescriptor] = result.value
+          _previousCaptchaInfo.value = null
           _captchaInfoToShow.value = AsyncUiData.UiData(result.value)
 
           startOrRestartCaptchaTtlUpdateTask(chanDescriptor)
@@ -213,6 +241,11 @@ class Chan4CaptchaLayoutViewModel(
       captchaInfoAsyncData.data
     }
 
+    if (captchaInfo.ttlMillis() <= 0L) {
+      // The challenge has expired, answers can't be changed anymore
+      return
+    }
+
     val task = captchaInfo.tasks.getOrNull(taskIndex) ?: return
 
     val updatedImages = task.images
@@ -225,6 +258,10 @@ class Chan4CaptchaLayoutViewModel(
       }
 
     captchaInfo.tasks[taskIndex] = task.copy(images = updatedImages)
+    hapticFeedbackManager.tap()
+  }
+
+  fun onCaptchaSubmitted() {
     hapticFeedbackManager.tap()
   }
 
@@ -252,6 +289,17 @@ class Chan4CaptchaLayoutViewModel(
       }
 
       captchaTtlUpdateJob = null
+    }
+  }
+
+  private fun waitForCooldownAndReload(chanDescriptor: ChanDescriptor) {
+    activeJob?.cancel()
+    activeJob = viewModelScope.launch(Dispatchers.Main) {
+      if (!chan4CaptchaNotifierManager.wait()) {
+        return@launch
+      }
+
+      requestCaptcha(chanDescriptor = chanDescriptor, mcl = "", forced = true)
     }
   }
 
@@ -399,6 +447,8 @@ class Chan4CaptchaLayoutViewModel(
   ) {
     Logger.e(TAG, "requestCaptcha()", error)
 
+    _previousCaptchaInfo.value = null
+
     if (!error.isCancellationException()) {
       _captchaInfoToShow.value = AsyncUiData.Error(error)
     }
@@ -407,7 +457,7 @@ class Chan4CaptchaLayoutViewModel(
       Logger.debug(TAG) {
         "requestCaptcha() error is CaptchaCooldownError, starting the waiter for ${chanDescriptor}"
       }
-      chan4CaptchaNotifierManager.start(chanDescriptor, error.cooldownEndTimeMs)
+      chan4CaptchaNotifierManager.start(chanDescriptor, error.cooldownEndTimeMs, error)
 
       if (!chan4CaptchaNotifierManager.wait()) {
         Logger.debug(TAG) {
@@ -531,6 +581,32 @@ class Chan4CaptchaLayoutViewModel(
       return tasks.all { task ->
         task.images.any { image -> image.isSelected }
       }
+    }
+
+    fun answeredTasksCount(): Int {
+      return tasks.count { task -> task.images.any { image -> image.isSelected } }
+    }
+
+    /**
+     * Returns the index of the first task after [afterTaskIndex] (wrapping around) that has no answer yet.
+     * */
+    fun nextUnansweredTaskIndex(afterTaskIndex: Int): Int? {
+      if (tasks.isEmpty()) {
+        return null
+      }
+
+      for (offset in 1..tasks.size) {
+        val index = (afterTaskIndex + offset) % tasks.size
+        if (index == afterTaskIndex) {
+          continue
+        }
+
+        if (tasks[index].images.none { image -> image.isSelected }) {
+          return index
+        }
+      }
+
+      return null
     }
 
     fun solution(): String {
