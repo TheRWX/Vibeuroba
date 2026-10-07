@@ -58,6 +58,7 @@ class ImageSaverV2Service : Service() {
   private val notificationUpdateExecutor = KeyBasedSerializedCoroutineExecutor<String>(kurobaScope)
 
   private var stopServiceJob: Job? = null
+
   // Start requests whose input is still being loaded; they aren't in the delegate's active downloads yet.
   private val pendingStartRequests = AtomicInteger(0)
 

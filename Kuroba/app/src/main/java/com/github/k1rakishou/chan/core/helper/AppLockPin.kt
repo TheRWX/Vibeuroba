@@ -89,7 +89,7 @@ class AppLockPin(
   private fun decode(value: String): ByteArray? {
     return try {
       Base64.decode(value, Base64.NO_WRAP)
-    } catch (error: IllegalArgumentException) {
+    } catch (ignored: IllegalArgumentException) {
       null
     }
   }
