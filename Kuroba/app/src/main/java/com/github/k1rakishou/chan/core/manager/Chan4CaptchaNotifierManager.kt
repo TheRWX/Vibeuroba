@@ -29,6 +29,7 @@ class Chan4CaptchaNotifierManager(
   private var _waiter = CompletableDeferred<Unit>()
   private var _captchaViewShown = false
   private var _captchaViewModelCallbacks: CaptchaViewModelCallbacks? = null
+
   // Written from the app scope (Default dispatcher), read from the main thread
   @Volatile
   private var _activeCooldown: ActiveCooldown? = null

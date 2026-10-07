@@ -27,5 +27,4 @@ class ReplyResponseTest {
     assertFalse(response.captchaMistyped)
     assertFalse(ReplyResponse(response).captchaMistyped)
   }
-
 }
