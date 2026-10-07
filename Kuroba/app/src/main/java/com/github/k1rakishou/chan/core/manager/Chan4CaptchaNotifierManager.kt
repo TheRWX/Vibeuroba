@@ -85,11 +85,14 @@ class Chan4CaptchaNotifierManager(
     Logger.debug(TAG) { "start() waitDescriptor: ${waitDescriptor}, cooldownEndTimeMs: ${cooldownEndTimeMs}" }
 
     val thisCooldown = cooldownError?.let { error -> ActiveCooldown(waitDescriptor, error) }
-    _activeCooldown = thisCooldown
 
     _waitJob?.cancel()
     _waiter.cancel()
     _waiter = CompletableDeferred()
+
+    // Publish the cooldown only after the new waiter is in place: a captcha screen that restores this cooldown
+    // (activeCooldownError() + wait()) must not end up waiting on the old, cancelled waiter.
+    _activeCooldown = thisCooldown
 
     _waitJob = appScope.launch {
       var currentTime: Long
