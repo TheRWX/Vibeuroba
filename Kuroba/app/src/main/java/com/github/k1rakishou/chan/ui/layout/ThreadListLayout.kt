@@ -671,12 +671,6 @@ class ThreadListLayout @JvmOverloads constructor(
 
         return true
       }
-      KeyEvent.KEYCODE_BACK -> {
-        if (event.isLongPress) {
-          threadListLayoutCallback?.threadBackLongPressed()
-          return true
-        }
-      }
     }
 
     return false

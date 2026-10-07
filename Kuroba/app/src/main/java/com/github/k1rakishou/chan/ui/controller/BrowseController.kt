@@ -19,6 +19,7 @@ import com.github.k1rakishou.chan.features.archive.BoardArchiveController
 import com.github.k1rakishou.chan.features.drawer.MainControllerCallbacks
 import com.github.k1rakishou.chan.features.settings.AppSettingsController
 import com.github.k1rakishou.chan.features.settings.SettingsScreenKey
+import com.github.k1rakishou.chan.features.setup.boards.add.AddBoardsController
 import com.github.k1rakishou.chan.features.setup.boards.selection.BoardSelectionController
 import com.github.k1rakishou.chan.features.setup.site.setup.SitesSetupController
 import com.github.k1rakishou.chan.features.toolbar.HamburgMenuItem
@@ -688,6 +689,17 @@ class BrowseController(
               params = AppSettingsController.Params.createForInitialScreen(
                 screenKey = SettingsScreenKey.Site(siteDescriptor)
               )
+            )
+          )
+        }
+
+        override fun onAddBoardsClicked(siteDescriptor: SiteDescriptor) {
+          pushChildController(
+            AddBoardsController(
+              context = context,
+              siteDescriptor = siteDescriptor,
+              // The board picker refreshes itself from BoardManager events
+              refreshBoardsFunc = {}
             )
           )
         }

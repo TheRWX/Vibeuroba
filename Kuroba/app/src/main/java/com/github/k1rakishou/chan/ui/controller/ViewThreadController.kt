@@ -316,7 +316,9 @@ open class ViewThreadController(
   }
 
   override fun threadBackLongPressed() {
-    threadFollowHistoryManager.clearAllExcept(threadDescriptor)
+    // The stack only holds threads we came from (OpenExternalThreadHelper pushes the current thread before
+    // leaving it). Keeping the current thread here made the next back "return" to the thread already open.
+    threadFollowHistoryManager.clear()
     showToast(R.string.thread_follow_history_has_been_cleared)
   }
 
@@ -682,6 +684,12 @@ open class ViewThreadController(
             stringId = R.string.action_scroll_to_bottom,
             onClick = { item -> downClicked(item) }
           )
+          // Vibeuroba: replaces long-pressing back, which Android 16 (predictive back) no longer delivers.
+          withOverflowMenuItem(
+            id = ACTION_CLEAR_THREAD_HISTORY,
+            stringId = R.string.action_clear_thread_follow_history,
+            onClick = { threadBackLongPressed() }
+          )
         }
       }
     )
@@ -869,6 +877,7 @@ open class ViewThreadController(
     private const val ACTION_SCROLL_TO_TOP = 9011
     private const val ACTION_SCROLL_TO_BOTTOM = 9012
     private const val ACTION_DOWNLOAD_THREAD = 9013
+    private const val ACTION_CLEAR_THREAD_HISTORY = 9014
 
     val threadControllerKey by lazy(LazyThreadSafetyMode.NONE) { ControllerKey(ViewThreadController::class.java.name) }
   }

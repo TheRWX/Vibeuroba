@@ -250,7 +250,8 @@ open class AppConstants(
     const val MPV_CONF_DIR = "mpvconf"
     const val MPV_CONF_FILE = "mpv.conf"
 
-    const val RESOURCES_ENDPOINT = "https://raw.githubusercontent.com/K1rakishou/Kuroba-Experimental/develop/docs/"
+    // Vibeuroba: static images served from this repository's docs/ (not upstream's).
+    const val RESOURCES_ENDPOINT = "https://raw.githubusercontent.com/TheRWX/Vibeuroba/vibeuroba-1.0/docs/"
 
     const val INLINED_IMAGE_THUMBNAIL = RESOURCES_ENDPOINT + "internal_spoiler.png"
     @JvmField val INLINED_IMAGE_THUMBNAIL_URL = INLINED_IMAGE_THUMBNAIL.toHttpUrl()

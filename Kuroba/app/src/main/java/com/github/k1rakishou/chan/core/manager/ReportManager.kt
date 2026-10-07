@@ -234,7 +234,7 @@ class ReportManager(
         return ReportRequest(
           title = title,
           body = body,
-          labels = listOf("KurobaEx", "New", "Crash")
+          labels = listOf("Vibeuroba", "New", "Crash")
         )
       }
 
@@ -242,7 +242,7 @@ class ReportManager(
         return ReportRequest(
           title = title,
           body = body,
-          labels = listOf("KurobaEx", "New", "Report")
+          labels = listOf("Vibeuroba", "New", "Report")
         )
       }
 

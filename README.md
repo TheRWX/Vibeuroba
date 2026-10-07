@@ -155,5 +155,10 @@ Vibeuroba builds on the work of K1rakishou, the Kuroba Experimental contributors
 and the original Kuroba contributors. Existing copyright notices and attribution
 remain in the source.
 
+The themes in [`themes/`](themes/) come from
+[KurobaEx-themes](https://github.com/K1rakishou/KurobaEx-themes) (GPL-3.0) and keep
+their original names and authors. The optional mpv player libraries are still
+downloaded from [KurobaEx-mpv-libs](https://github.com/K1rakishou/KurobaEx-mpv-libs).
+
 Licensed under [GNU GPL v3](COPYING.txt). See also the
 [third-party library licenses](Kuroba/app/src/main/assets/html/license.html).
