@@ -2,3 +2,7 @@ v1.3.50 (Vibeuroba 1.2)
 - Targets Android 16: predictive back gestures (swipe back shows where you're going).
 - "Clear thread history" is now in a thread's menu (it used to be a long press of the back button, which Android 16 no longer supports).
 - Built-in images and the theme gallery are now served from Vibeuroba's own repository.
+- New Vibeuroba app icon, with a themed (monochrome) icon on Android 13+.
+- Add several boards at once: tap "+ Add boards" next to a site in the board picker.
+- Board search in "Select boards" no longer lists boards that don't match.
+- Backup, filter export and update file names and a few texts now say Vibeuroba instead of KurobaEx.
