@@ -27,6 +27,7 @@ import com.github.k1rakishou.chan.core.helper.ThreadDownloaderFileManagerWrapper
 import com.github.k1rakishou.chan.core.helper.migration.app.ApplicationMigrationHelper
 import com.github.k1rakishou.chan.core.manager.AppPrivacyManager
 import com.github.k1rakishou.chan.core.manager.ApplicationVisibilityManager
+import com.github.k1rakishou.chan.core.usecase.ExportBackupFileUseCase
 import com.github.k1rakishou.chan.ui.activity.CrashReportActivity
 import com.github.k1rakishou.chan.ui.adapter.PostsFilter
 import com.github.k1rakishou.chan.utils.AppModuleAndroidUtils
@@ -249,6 +250,9 @@ class Chan : Application(), ActivityLifecycleCallbacks {
 
     // Preload user-agent on a background thread
     applicationScope.launch(Dispatchers.IO) { appConstants.userAgentMightBeOverridden }
+
+    // Remove files an interrupted backup export may have left behind
+    applicationScope.launch(Dispatchers.IO) { ExportBackupFileUseCase.deleteLeftoverTempFiles(this@Chan) }
 
     val fileManager = provideApplicationFileManager()
     val imageSaverFileManagerWrapper =  provideImageSaverFileManagerWrapper()

@@ -13,6 +13,7 @@ import com.github.k1rakishou.fsaf.file.ExternalFile
 import com.github.k1rakishou.model.KurobaMainDatabase
 import com.github.k1rakishou.model.repository.DatabaseMetaRepository
 import com.github.k1rakishou.v2.database.KurobaSettingsDatabase
+import kotlinx.coroutines.delay
 import okhttp3.internal.closeQuietly
 import java.io.BufferedInputStream
 import java.io.File
@@ -96,6 +97,7 @@ class ExportBackupFileUseCase(
 
     Logger.d(TAG, "Executing checkpoint command... done! took ${time}")
 
+    checkpointLiveSettingsDatabase()
     val sanitizedSettingsDatabase = createSanitizedSettingsDatabaseCopy()
 
     try {
@@ -114,18 +116,37 @@ class ExportBackupFileUseCase(
    * end up in a backup file. Export a copy with those rows removed instead of the live database file.
    */
   private fun createSanitizedSettingsDatabaseCopy(): SanitizedSettingsDatabaseCopy {
-    // Fold the live WAL into the main file so the copy has every current setting.
-    kurobaSettingsDatabase.openHelper.writableDatabase.query("PRAGMA wal_checkpoint(FULL)").use { cursor ->
-      if (cursor.moveToFirst() && cursor.getInt(0) != 0) {
-        Logger.w(TAG, "Settings database checkpoint was blocked, the backup may miss the latest changes")
-      }
-    }
-
     return SanitizedSettingsDatabaseCopy.create(
       appContext = appContext,
       sourceDatabaseFile = appContext.getDatabasePath(KurobaSettingsDatabase.DATABASE_NAME),
       tempDir = File(appContext.cacheDir, SETTINGS_EXPORT_TEMP_DIR)
     )
+  }
+
+  /**
+   * Folds the live WAL into the main file so that the copy of the main file has every current setting. The
+   * checkpoint can be blocked for a moment by a concurrent settings write, so try a few times. If it is still
+   * blocked the export goes ahead (a settings change made in the last moments may be missing from the backup,
+   * which is better than refusing to make a backup at all).
+   */
+  private suspend fun checkpointLiveSettingsDatabase() {
+    for (attempt in 1..SETTINGS_CHECKPOINT_ATTEMPTS) {
+      val blocked = kurobaSettingsDatabase.openHelper.writableDatabase
+        .query("PRAGMA wal_checkpoint(FULL)")
+        .use { cursor -> cursor.moveToFirst() && cursor.getInt(0) != 0 }
+
+      if (!blocked) {
+        return
+      }
+
+      Logger.w(TAG, "Settings database checkpoint was blocked (attempt ${attempt}/${SETTINGS_CHECKPOINT_ATTEMPTS})")
+
+      if (attempt < SETTINGS_CHECKPOINT_ATTEMPTS) {
+        delay(SETTINGS_CHECKPOINT_RETRY_DELAY_MS)
+      }
+    }
+
+    Logger.w(TAG, "Settings database checkpoint is still blocked, the backup may miss the latest settings changes")
   }
 
   private fun writeBackupZip(outputFile: ExternalFile, filesToExport: List<File>) {
@@ -227,6 +248,17 @@ class ExportBackupFileUseCase(
 
     const val THREAD_DOWNLOADS_CACHE_DIR = "thread_downloads_cache_dir"
     private const val SETTINGS_EXPORT_TEMP_DIR = "settings_backup_export"
+    private const val SETTINGS_CHECKPOINT_ATTEMPTS = 3
+    private const val SETTINGS_CHECKPOINT_RETRY_DELAY_MS = 200L
     const val BUFFER_SIZE = 8192
+
+    /**
+     * An export that was interrupted (for example the app got killed) leaves behind the copy of the settings
+     * database that was not cleaned yet and still contains the non-backupable settings. A later export would
+     * delete it, but it should not sit in the cache until then, so this is called when the app starts.
+     */
+    fun deleteLeftoverTempFiles(appContext: Context) {
+      File(appContext.cacheDir, SETTINGS_EXPORT_TEMP_DIR).deleteRecursively()
+    }
   }
 }
