@@ -18,22 +18,29 @@ import com.github.k1rakishou.chan.core.di.component.viewmodel.ViewModelComponent
 import com.github.k1rakishou.chan.core.di.module.shared.ViewModelAssistedFactory
 import com.github.k1rakishou.chan.core.manager.BoardManager
 import com.github.k1rakishou.chan.core.manager.SiteManager
+import com.github.k1rakishou.chan.core.site.SiteBase
+import com.github.k1rakishou.chan.core.site.SiteConfiguration
 import com.github.k1rakishou.chan.core.site.loader.ClientException
 import com.github.k1rakishou.chan.ui.helper.BoardHelper
 import com.github.k1rakishou.chan.utils.InputWithQuerySorter
 import com.github.k1rakishou.chan.utils.requireParams
 import com.github.k1rakishou.common.mutableListWithCap
+import com.github.k1rakishou.core_logger.Logger
 import com.github.k1rakishou.model.data.board.ChanBoard
 import com.github.k1rakishou.model.data.descriptor.BoardDescriptor
 import com.github.k1rakishou.model.data.descriptor.SiteDescriptor
+import com.github.k1rakishou.model.data.site.SiteBoards
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.incrementAndFetch
@@ -108,6 +115,12 @@ class AddBoardsControllerViewModel(
 
       _uiState.value = AsyncUiData.Loading
 
+      val refreshError = refreshBoardsFromServerIfNeeded(site as? SiteBase)
+      if (refreshError != null && boardManager.boardsCount(_siteDescriptor) <= 0) {
+        _uiState.value = AsyncUiData.Error(refreshError)
+        return@launch
+      }
+
       loadInactiveBoards(_siteDescriptor)
       findBoardsForSelection()
     }
@@ -129,17 +142,22 @@ class AddBoardsControllerViewModel(
     }
   }
 
+  /**
+   * Checks all boards matching the current search query, or unchecks them if they are all checked already. Boards
+   * hidden by the search are left as they are.
+   * */
   fun toggleAll() {
-    if (_checkedBoards.size == _allNoneActiveBoards.size) {
-      _checkedBoards.clear()
+    val query = _currentSearchQuery.value
+    val matchedBoardDescriptors = _allNoneActiveBoards
+      .filter { chanBoard -> boardMatchesQuery(chanBoard, query) }
+      .map { chanBoard -> chanBoard.boardDescriptor }
+
+    if (_checkedBoards.containsAll(matchedBoardDescriptors)) {
+      _checkedBoards.removeAll(matchedBoardDescriptors.toSet())
       return
     }
 
-    val allBoardsDescriptors = _allNoneActiveBoards
-      .map { chanBoard -> chanBoard.boardDescriptor }
-
-    _checkedBoards.clear()
-    _checkedBoards.addAll(allBoardsDescriptors)
+    _checkedBoards.addAll(matchedBoardDescriptors)
   }
 
   fun activateCheckedBoards(onDone: () -> Unit) {
@@ -152,6 +170,41 @@ class AddBoardsControllerViewModel(
         )
       } finally {
         onDone()
+      }
+    }
+  }
+
+  /**
+   * Same rule as the site's board settings (BoardsReorderControllerViewModel): load the board list from the server when
+   * it has never been loaded (a newly enabled site) or is older than [SiteBase.BoardRefreshIntervalDays], otherwise
+   * there may be nothing to select here. Returns the error if loading failed.
+   * */
+  private suspend fun refreshBoardsFromServerIfNeeded(site: SiteBase?): Throwable? {
+    if (site == null || site.hasSiteFeature(SiteConfiguration.SiteFeature.CatalogComposition)) {
+      return null
+    }
+
+    val refreshPeriodMs = TimeUnit.DAYS.toMillis(SiteBase.BoardRefreshIntervalDays.toLong())
+    val lastRefreshTime = site.commonSettings.lastSiteBoardsRefreshTime.read()
+    val needRefresh = boardManager.boardsCount(_siteDescriptor) <= 0
+      || lastRefreshTime + refreshPeriodMs < System.currentTimeMillis()
+
+    if (!needRefresh) {
+      return null
+    }
+
+    val siteBoardsResult = site.actions.loadBoardInfo()
+      .filterIsInstance<SiteBoards.Result>()
+      .first()
+
+    return when (siteBoardsResult) {
+      is SiteBoards.Result.Error -> {
+        Logger.error(TAG, siteBoardsResult.error) { "Error loading boards for site ${_siteDescriptor}" }
+        siteBoardsResult.error
+      }
+      is SiteBoards.Result.Success -> {
+        site.commonSettings.lastSiteBoardsRefreshTime.write(System.currentTimeMillis())
+        null
       }
     }
   }
@@ -184,14 +237,7 @@ class AddBoardsControllerViewModel(
         var totalMatched = 0
 
         for (chanBoard in _allNoneActiveBoards) {
-          val boardDescription = chanBoard.description
-
-          val matches = query.isEmpty()
-            || chanBoard.formattedBoardCode().contains(query, ignoreCase = true)
-            || chanBoard.boardName().contains(query, ignoreCase = true)
-            || (boardDescription.isNotEmpty() && boardDescription.contains(query, ignoreCase = true))
-
-          if (matches) {
+          if (boardMatchesQuery(chanBoard, query)) {
             ++totalMatched
 
             if (matchedBoards.size < MAX_DISPLAYED_BOARDS) {
@@ -233,6 +279,15 @@ class AddBoardsControllerViewModel(
     }
   }
 
+  private fun boardMatchesQuery(chanBoard: ChanBoard, query: String): Boolean {
+    val boardDescription = chanBoard.description
+
+    return query.isEmpty()
+      || chanBoard.formattedBoardCode().contains(query, ignoreCase = true)
+      || chanBoard.boardName().contains(query, ignoreCase = true)
+      || (boardDescription.isNotEmpty() && boardDescription.contains(query, ignoreCase = true))
+  }
+
   data class BoardForSelection(
     val boardDescriptor: BoardDescriptor,
     val boardName: String,
@@ -258,6 +313,8 @@ class AddBoardsControllerViewModel(
   }
 
   companion object {
+    private const val TAG = "AddBoardsControllerViewModel"
+
     const val MAX_DISPLAYED_BOARDS = 256
   }
 }
