@@ -1275,7 +1275,11 @@ class ReplyLayoutState(
       replyResponse.requireAuthentication -> {
         Logger.d(TAG, "onPostSendComplete(${chanDescriptor}) requireAuthentication os true replyResponse: $replyResponse")
         // Open the captcha right away instead of making the user dismiss an error dialog first
-        showToast(appResources.string(R.string.reply_captcha_required))
+        if (replyResponse.captchaMistyped) {
+          showToast(appResources.string(R.string.reply_captcha_wrong_or_expired))
+        } else {
+          showToast(appResources.string(R.string.reply_captcha_required))
+        }
 
         callbacks.showCaptcha(
           chanDescriptor = chanDescriptor,

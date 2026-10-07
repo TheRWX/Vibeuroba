@@ -1223,6 +1223,8 @@ If you ever log out or if the passcode expires you will have to change reply mod
     <string name="captcha_layout_save_answer">Save answer</string>
     <string name="captcha_layout_zoom_hint">Pinch to zoom \u00b7 double tap to reset \u00b7 tap to close</string>
     <string name="captcha_layout_saved_answer_time_left">%1$ds</string>
+    <string name="reply_captcha_wrong_or_expired">The captcha answer was wrong or has expired. Please solve a new one.</string>
+    <string name="reply_captcha_after_cooldown">Posting is on cooldown for %1$d s. You will be asked for the captcha when you can post.</string>
     <string name="reply_captcha_required">A captcha is required to post. Solve it to continue.</string>
 
     <string name="captcha_4chan_updates_title">Captcha updates history</string>
@@ -1374,7 +1376,7 @@ If you ever log out or if the passcode expires you will have to change reply mod
     <string name="post_service_processing_count">Processing %1$d replies</string>
     <string name="post_service_response_probably_banned">You are probably banned</string>
     <string name="post_service_response_probably_warned">You are probably warned</string>
-    <string name="post_service_response_authentication_required">Authentication required</string>
+    <string name="post_service_response_authentication_required">Captcha required \u2013 open the app to finish posting</string>
     <string name="post_service_response_dvach_antispam_detected">Dvach anti-spam script detected</string>
     <string name="post_service_response_unknown_error">Unknown error</string>
 

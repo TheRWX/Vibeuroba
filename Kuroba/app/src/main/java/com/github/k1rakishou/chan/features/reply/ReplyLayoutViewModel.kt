@@ -715,15 +715,29 @@ class ReplyLayoutViewModel(
     }
 
     if (replyMode == ReplyMode.ReplyModeSolveCaptchaManually && !captchaHolder.hasSolution()) {
-      Logger.debug(TAG) { "enqueueNewReply(${chanDescriptor}) no captcha solution, showing captcha" }
+      val remainingCooldownMs = postingServiceDelegate.getRemainingPostCooldownMs(chanDescriptor, replyMode)
 
-      threadListLayoutCallbacks?.showCaptcha(
-        chanDescriptor = chanDescriptor,
-        replyMode = replyMode,
-        autoReply = true
-      )
+      if (remainingCooldownMs > MAX_COOLDOWN_TO_SOLVE_CAPTCHA_BEFORE_ENQUEUE_MS) {
+        // A captcha solved now would most likely expire while the reply is waiting for the cooldown to pass. Enqueue
+        // the reply without it: the posting service waits for the cooldown and then asks for the captcha at the
+        // moment when posting actually becomes possible.
+        Logger.debug(TAG) {
+          "enqueueNewReply(${chanDescriptor}) no captcha solution but the cooldown is ${remainingCooldownMs}ms, " +
+            "enqueueing without asking for the captcha first"
+        }
 
-      return false
+        showToast(appResources.string(R.string.reply_captcha_after_cooldown, remainingCooldownMs / 1000L))
+      } else {
+        Logger.debug(TAG) { "enqueueNewReply(${chanDescriptor}) no captcha solution, showing captcha" }
+
+        threadListLayoutCallbacks?.showCaptcha(
+          chanDescriptor = chanDescriptor,
+          replyMode = replyMode,
+          autoReply = true
+        )
+
+        return false
+      }
     }
 
     PostingService.enqueueReplyChanDescriptor(
@@ -930,6 +944,10 @@ class ReplyLayoutViewModel(
 
   companion object {
     private const val TAG = "ReplyLayoutViewModel"
+
+    // If the reply has to wait longer than this because of a posting cooldown, don't ask for the captcha before
+    // enqueueing it (the solved captcha would expire while waiting). It's asked for when the cooldown is over instead.
+    private const val MAX_COOLDOWN_TO_SOLVE_CAPTCHA_BEFORE_ENQUEUE_MS = 30_000L
   }
 
 }
