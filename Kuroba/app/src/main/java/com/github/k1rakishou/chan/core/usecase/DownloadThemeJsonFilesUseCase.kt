@@ -134,6 +134,7 @@ class DownloadThemeJsonFilesUseCase(
 
   companion object {
     private const val TAG = "DownloadThemeJsonFilesUseCase"
+
     // Vibeuroba: theme gallery lives in this repository's themes/ folder (copied from KurobaEx-themes, GPL-3.0).
     private const val GET_THEMES_LIST_ENDPOINT = "https://api.github.com/repos/TheRWX/Vibeuroba/contents/themes?ref=vibeuroba-1.0"
     private const val MAX_THEME_FILE_SIZE = 1024 * 128 // 128KB

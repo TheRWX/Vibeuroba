@@ -164,6 +164,20 @@ class PostingServiceDelegate(
     checkAllRepliesProcessed()
   }
 
+  /**
+   * How long the reply for the [chanDescriptor] will have to wait in the posting queue because of the (locally known)
+   * posting cooldowns before it can actually be sent.
+   * */
+  suspend fun getRemainingPostCooldownMs(chanDescriptor: ChanDescriptor, replyMode: ReplyMode): Long {
+    val hasFiles = replyManager.readReply(chanDescriptor) { reply -> reply.hasFiles() }
+
+    return lastReplyRepository.getTimeUntilNextThreadCreationOrReply(
+      chanDescriptor = chanDescriptor,
+      replyMode = replyMode,
+      hasAttachedImages = hasFiles
+    )
+  }
+
   suspend fun listenForPostingStatusUpdates(chanDescriptor: ChanDescriptor): SharedFlow<PostingStatus> {
     Logger.d(TAG, "listenForPostingStatusUpdates($chanDescriptor)")
 

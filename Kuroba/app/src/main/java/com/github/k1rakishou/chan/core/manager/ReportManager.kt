@@ -7,17 +7,13 @@ import android.os.Build
 import android.provider.Settings
 import com.github.k1rakishou.chan.BuildConfig
 import com.github.k1rakishou.chan.Chan
-import com.github.k1rakishou.chan.core.base.okhttp.ProxiedOkHttpClient
 import com.github.k1rakishou.chan.core.concurrency.SerializedCoroutineExecutor
 import com.github.k1rakishou.common.AndroidUtils
 import com.github.k1rakishou.common.AppConstants
 import com.github.k1rakishou.common.ModularResult
 import com.github.k1rakishou.common.isNotNullNorEmpty
-import com.github.k1rakishou.core_logger.Logger
 import com.github.k1rakishou.v2.KurobaSettings
-import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
-import dagger.Lazy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -26,8 +22,6 @@ class ReportManager(
   private val kurobaSettings: KurobaSettings,
   private val appScope: CoroutineScope,
   private val appContext: Context,
-  private val proxiedOkHttpClient: Lazy<ProxiedOkHttpClient>,
-  private val gson: Lazy<Gson>,
   private val appConstants: AppConstants
 ) {
   private val activityManager: ActivityManager?
@@ -270,8 +264,6 @@ class ReportManager(
   )
 
   companion object {
-    private const val TAG = "ReportManager"
-
     const val MAX_TITLE_LENGTH = 512
     const val MAX_DESCRIPTION_LENGTH = 8192
     const val MAX_LOGS_LENGTH = 65535

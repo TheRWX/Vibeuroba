@@ -3,7 +3,6 @@ package com.github.k1rakishou.chan.ui.captcha.chan4
 import android.annotation.SuppressLint
 import android.content.Context
 import android.widget.FrameLayout
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -26,24 +26,36 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.ScaleFactor
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -52,8 +64,12 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.chan.R
 import com.github.k1rakishou.chan.core.compose.AsyncUiData
@@ -94,12 +110,16 @@ import com.github.k1rakishou.core_themes.ThemeEngine
 import com.github.k1rakishou.core_themes.resolveTextColor
 import com.github.k1rakishou.model.data.descriptor.ChanDescriptor
 import com.github.k1rakishou.model.data.descriptor.SiteDescriptor
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @SuppressLint("ViewConstructor")
 class Chan4CaptchaLayout(
   context: Context,
   private val chanDescriptor: ChanDescriptor,
+  // True when the solved captcha is going to be used to post the reply right away, false when the answer is only
+  // being saved for later (pre-solve).
+  private val autoReply: Boolean = true,
   private val presentControllerFunc: (Controller) -> Unit
 ) : TouchBlockingFrameLayout(context),
   AuthenticationLayoutInterface,
@@ -198,21 +218,47 @@ class Chan4CaptchaLayout(
         boxScope = this@BuildContent,
         scrollState = scrollState,
         header = {
+          val chanTheme = LocalChanTheme.current
           val captchaTtlMillis by viewModel.captchaTtlMillisFlow.collectAsState()
           val captchaInfoAsync by viewModel.captchaInfoToShow
+          val shownCaptchaInfo = (captchaInfoAsync as? AsyncUiData.UiData)?.data
 
           Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
           ) {
-            if (captchaTtlMillis >= 0L) {
-              KurobaComposeText(
-                modifier = Modifier
-                  .wrapContentWidth()
-                  .padding(vertical = 4.dp),
-                text = "Captcha TTL: ${captchaTtlMillis / 1000L} sec",
-                fontSize = 14.ktu
-              )
+            Column(
+              modifier = Modifier
+                .wrapContentWidth()
+                .padding(vertical = 4.dp)
+            ) {
+              if (captchaTtlMillis >= 0L) {
+                val ttlSeconds = captchaTtlMillis / 1000L
+                val ttlIsLow = ttlSeconds <= LOW_TTL_SECONDS
+
+                KurobaComposeText(
+                  text = if (captchaTtlMillis > 0L) {
+                    "Captcha TTL: ${ttlSeconds} sec"
+                  } else {
+                    stringResource(id = R.string.captcha_layout_expired)
+                  },
+                  color = if (ttlIsLow) chanTheme.errorColorCompose else null,
+                  fontWeight = if (ttlIsLow) FontWeight.Bold else null,
+                  fontSize = 14.ktu
+                )
+              }
+
+              if (shownCaptchaInfo != null && !shownCaptchaInfo.isNoopChallenge() && shownCaptchaInfo.tasks.isNotEmpty()) {
+                KurobaComposeText(
+                  text = stringResource(
+                    id = R.string.captcha_layout_progress,
+                    shownCaptchaInfo.answeredTasksCount(),
+                    shownCaptchaInfo.tasks.size
+                  ),
+                  color = chanTheme.textColorHintCompose,
+                  fontSize = 14.ktu
+                )
+              }
             }
 
             Spacer(modifier = Modifier.weight(1f))
@@ -248,7 +294,7 @@ class Chan4CaptchaLayout(
               .verticalScroll(scrollState)
           ) {
             Spacer(modifier = Modifier.height(paddingValues.calculateTopPadding()))
-            BuildCaptchaWindow()
+            BuildCaptchaWindow(scrollState)
             Spacer(modifier = Modifier.height(paddingValues.calculateBottomPadding()))
           }
         },
@@ -260,23 +306,29 @@ class Chan4CaptchaLayout(
   }
 
   @Composable
-  private fun BuildCaptchaWindow() {
+  private fun BuildCaptchaWindow(scrollState: ScrollState) {
     Spacer(modifier = Modifier.height(8.dp))
 
     Box(
       modifier = Modifier
         .heightIn(min = 64.dp)
     ) {
-      BuildCaptchaImageRows()
+      BuildCaptchaImageRows(scrollState)
     }
 
     Spacer(modifier = Modifier.height(8.dp))
   }
 
   @Composable
-  private fun BuildCaptchaImageRows() {
+  private fun BuildCaptchaImageRows(scrollState: ScrollState) {
     val chanTheme = LocalChanTheme.current
     val captchaInfoAsync by viewModel.captchaInfoToShow
+    val previousCaptchaInfo by viewModel.previousCaptchaInfo
+    val captchaTtlMillis by viewModel.captchaTtlMillisFlow.collectAsState()
+
+    val coroutineScope = rememberCoroutineScope()
+    val taskTops = remember { mutableMapOf<Int, Float>() }
+    var zoomedImage by remember { mutableStateOf<ImageBitmap?>(null) }
 
     val textMeasurer = rememberTextMeasurer()
     val nextButtonTextLayoutResult = remember {
@@ -284,13 +336,16 @@ class Chan4CaptchaLayout(
         text = "Next",
         style = TextStyle(
           color = chanTheme.textColorHintCompose,
-          fontSize = 10.sp
+          fontSize = 12.sp,
+          fontWeight = FontWeight.Bold
         )
       )
     }
 
+    var isLoadingNewChallenge = false
+
     val captchaInfo = when (val captchaInfo = captchaInfoAsync) {
-      is AsyncUiData.UiData<Chan4CaptchaLayoutViewModel.CaptchaInfo> -> captchaInfo
+      is AsyncUiData.UiData<Chan4CaptchaLayoutViewModel.CaptchaInfo> -> captchaInfo.data
       is AsyncUiData.Error -> {
         KurobaComposeErrorMessage(
           modifier = Modifier
@@ -301,19 +356,27 @@ class Chan4CaptchaLayout(
         return
       }
       AsyncUiData.Loading -> {
-        KurobaComposeProgressIndicator(
-          modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 8.dp),
-        )
-        return
+        val prevCaptchaInfo = previousCaptchaInfo
+        if (prevCaptchaInfo == null) {
+          KurobaComposeProgressIndicator(
+            modifier = Modifier
+              .fillMaxSize()
+              .padding(horizontal = 8.dp),
+          )
+          return
+        }
+
+        // Keep the old challenge on the screen (dimmed) while the new one is being loaded
+        isLoadingNewChallenge = true
+        prevCaptchaInfo
       }
       AsyncUiData.NotInitialized -> {
         return
       }
     }
 
-    val tasks = captchaInfo.data.tasks
+    val isExpired = !isLoadingNewChallenge && captchaTtlMillis == 0L
+    val tasks = captchaInfo.tasks
 
     Box(
       modifier = Modifier
@@ -322,152 +385,344 @@ class Chan4CaptchaLayout(
         .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
       Column(modifier = Modifier.fillMaxWidth()) {
-        if (captchaInfo.data.isNoopChallenge()) {
+        if (isLoadingNewChallenge) {
+          KurobaComposeText(
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(bottom = 8.dp),
+            text = stringResource(id = R.string.captcha_layout_loading_new_challenge),
+            color = chanTheme.accentColorCompose,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center
+          )
+        }
+
+        if (isExpired) {
+          Row(
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            KurobaComposeText(
+              modifier = Modifier.weight(1f),
+              text = stringResource(id = R.string.captcha_layout_expired_load_new),
+              color = chanTheme.errorColorCompose,
+              fontWeight = FontWeight.SemiBold
+            )
+
+            KurobaComposeTextBarButton(
+              onClick = { reloadCaptcha() },
+              text = stringResource(id = R.string.captcha_layout_load_new_challenge)
+            )
+          }
+        }
+
+        if (captchaInfo.isNoopChallenge()) {
           VerificationNotRequired()
         } else {
-          for ((taskIndex, task) in tasks.withIndex()) {
-            if (taskIndex > 0) {
-              Spacer(modifier = Modifier.height(12.dp))
-            }
-
-            Column(
-              modifier = Modifier
-                .fillMaxWidth()
-                .background(chanTheme.backColorSecondaryCompose)
-                .padding(all = 8.dp)
-            ) {
-              Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-              ) {
-                KurobaComposeText(
-                  text = "#${taskIndex + 1}",
-                  color = chanTheme.textColorHintCompose
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Column(
-                  modifier = Modifier
-                    .fillMaxWidth()
-                ) {
-                  CaptchaTaskTitle(task.title)
-                }
+          Column(
+            modifier = Modifier
+              .fillMaxWidth()
+              .alpha(if (isLoadingNewChallenge || isExpired) 0.4f else 1f)
+          ) {
+            for ((taskIndex, task) in tasks.withIndex()) {
+              if (taskIndex > 0) {
+                Spacer(modifier = Modifier.height(12.dp))
               }
 
-              Spacer(
-                modifier = Modifier
-                  .wrapContentWidth()
-                  .height(8.dp)
-              )
-
-              FlowRow(
+              Column(
                 modifier = Modifier
                   .fillMaxWidth()
-                  .wrapContentHeight(),
-                horizontalArrangement = Arrangement.spacedBy(
-                  space = 4.dp,
-                  alignment = Alignment.CenterHorizontally
-                ),
-                verticalArrangement = Arrangement.spacedBy(space = 10.dp),
-                maxItemsInEachRow = if (task.hasWideImages) 2 else Int.MAX_VALUE
+                  .background(chanTheme.backColorSecondaryCompose)
+                  .onGloballyPositioned { coordinates -> taskTops[taskIndex] = coordinates.positionInRoot().y }
+                  .padding(all = 8.dp)
               ) {
-                for ((imageIndex, taskImage) in task.images.withIndex()) {
-                  val aspectRatio = taskImage.imageBitmap.width.toFloat() / taskImage.imageBitmap.height.toFloat()
-                  val isWideImage = aspectRatio > 1.5f
+                Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  verticalAlignment = Alignment.CenterVertically
+                ) {
+                  val taskAnswered = task.images.any { image -> image.isSelected }
 
-                  val scale by animateFloatAsState(targetValue = if (taskImage.isSelected) 0.8f else 1.0f)
+                  KurobaComposeText(
+                    text = if (taskAnswered) "#${taskIndex + 1} \u2713" else "#${taskIndex + 1}",
+                    color = if (taskAnswered) chanTheme.accentColorCompose else chanTheme.textColorHintCompose,
+                    fontWeight = if (taskAnswered) FontWeight.Bold else null
+                  )
 
-                  Image(
+                  Spacer(modifier = Modifier.width(8.dp))
+
+                  Column(
                     modifier = Modifier
-                      .background(chanTheme.backColorCompose)
-                      .weight(if (isWideImage) 1f else 0.5f)
-                      .aspectRatio(aspectRatio)
-                      .kurobaClickable(
-                        bounded = true,
-                        onClick = { viewModel.onCaptchaImageClicked(taskIndex, imageIndex) }
-                      )
-                      .scale(scale)
-                      .drawWithContent {
-                        drawContent()
+                      .fillMaxWidth()
+                  ) {
+                    CaptchaTaskTitle(task.title)
+                  }
+                }
 
-                        if (taskImage.isSelected) {
-                          drawRect(
-                            color = chanTheme.accentColorCompose,
-                            style = Stroke(
-                              width = 12.0f,
-                              pathEffect = PathEffect.dashPathEffect(floatArrayOf(24f, 24f), 0f)
-                            )
-                          )
-                        }
+                Spacer(
+                  modifier = Modifier
+                    .wrapContentWidth()
+                    .height(8.dp)
+                )
 
-                        if (task.drawFakeSliderAndNextButton()) {
-                          // Draw the "next" button
-                          run {
-                            val verticalPadding = 2.dp.toPx()
-                            val horizontalPadding = 4.dp.toPx()
-                            val buttonWidth =
-                              (nextButtonTextLayoutResult.size.width + horizontalPadding.toInt()).toFloat()
-                            val buttonHeight =
-                              (nextButtonTextLayoutResult.size.height + verticalPadding.toInt()).toFloat()
+                // Show at most 2-3 images in a row, otherwise they become too small to inspect on a phone screen
+                val imagesPerRow = when {
+                  task.hasWideImages -> 2
+                  task.images.size == 4 -> 2
+                  else -> task.images.size.coerceIn(1, 3)
+                }
 
-                            translate(
-                              left = size.width - buttonWidth,
-                              top = 0f
-                            ) {
-                              drawRect(
-                                color = chanTheme.backColorCompose,
-                                size = Size(width = buttonWidth, height = buttonHeight)
-                              )
+                FlowRow(
+                  modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight(),
+                  horizontalArrangement = Arrangement.spacedBy(
+                    space = 4.dp,
+                    alignment = Alignment.CenterHorizontally
+                  ),
+                  verticalArrangement = Arrangement.spacedBy(space = 10.dp),
+                  maxItemsInEachRow = imagesPerRow
+                ) {
+                  for ((imageIndex, taskImage) in task.images.withIndex()) {
+                    val aspectRatio = taskImage.imageBitmap.width.toFloat() / taskImage.imageBitmap.height.toFloat()
+                    val isWideImage = aspectRatio > 1.5f
 
-                              translate(left = horizontalPadding / 2f, top = verticalPadding / 2f) {
-                                drawText(
-                                  textLayoutResult = nextButtonTextLayoutResult,
-                                  color = chanTheme.backColorCompose.resolveTextColor()
-                                )
+                    Image(
+                      modifier = Modifier
+                        .background(chanTheme.backColorCompose)
+                        .weight(if (isWideImage) 1f else 0.5f)
+                        .aspectRatio(aspectRatio)
+                        .kurobaClickable(
+                          enabled = !isLoadingNewChallenge && !isExpired,
+                          bounded = true,
+                          onLongClick = { zoomedImage = taskImage.imageBitmap },
+                          onClick = {
+                            val wasAnswered = tasks.getOrNull(taskIndex)
+                              ?.images
+                              ?.any { image -> image.isSelected } == true
+
+                            viewModel.onCaptchaImageClicked(taskIndex, imageIndex)
+
+                            val answeredNow = tasks.getOrNull(taskIndex)
+                              ?.images
+                              ?.getOrNull(imageIndex)
+                              ?.isSelected == true
+
+                            // Only jump ahead when this click has just answered the task. Changing an existing answer
+                            // (or a click that was ignored) must not move the user away from where they are.
+                            if (answeredNow && !wasAnswered) {
+                              val nextTaskIndex = captchaInfo.nextUnansweredTaskIndex(taskIndex)
+                              val firstTop = taskTops[0]
+                              val nextTop = nextTaskIndex?.let { index -> taskTops[index] }
+
+                              if (firstTop != null && nextTop != null) {
+                                coroutineScope.launch {
+                                  scrollState.animateScrollTo((nextTop - firstTop).toInt().coerceAtLeast(0))
+                                }
                               }
                             }
                           }
+                        )
+                        .drawWithContent {
+                          drawContent()
 
-                          // Draw the slider's thumb
-                          run {
-                            val sliderWidth = this.size.width
-                            val sliderHeight = this.size.height
-                            val sliderThumbSize = 6.dp.toPx()
+                          if (taskImage.isSelected) {
+                            val accentColor = chanTheme.accentColorCompose
+                            val borderWidth = 4.dp.toPx()
 
-                            val thumbOffsetStep = (sliderWidth - (sliderThumbSize * 2)) / (task.images.size).toFloat()
-                            val thumbOffset = ((imageIndex + 1) * thumbOffsetStep) + sliderThumbSize
-
-                            drawCircle(
-                              color = if (ThemeEngine.isDarkColor(chanTheme.accentColorCompose)) {
-                                Color.White
-                              } else {
-                                Color.Black
-                              },
-                              center = Offset(x = thumbOffset, y = sliderHeight),
-                              radius = sliderThumbSize + 1.dp.toPx()
+                            drawRect(color = accentColor.copy(alpha = 0.18f))
+                            drawRect(
+                              color = accentColor,
+                              topLeft = Offset(borderWidth / 2f, borderWidth / 2f),
+                              size = Size(size.width - borderWidth, size.height - borderWidth),
+                              style = Stroke(width = borderWidth)
                             )
 
-                            drawCircle(
-                              color = chanTheme.accentColorCompose,
-                              center = Offset(x = thumbOffset, y = sliderHeight),
-                              radius = sliderThumbSize
+                            // Checkmark badge
+                            val badgeRadius = 12.dp.toPx()
+                            val badgeCenter = Offset(badgeRadius + 6.dp.toPx(), badgeRadius + 6.dp.toPx())
+                            val checkColor = if (ThemeEngine.isDarkColor(accentColor)) Color.White else Color.Black
+                            val checkStrokeWidth = 2.5.dp.toPx()
+                            val checkBottom = Offset(
+                              x = badgeCenter.x - badgeRadius * 0.1f,
+                              y = badgeCenter.y + badgeRadius * 0.38f
+                            )
+
+                            drawCircle(color = accentColor, center = badgeCenter, radius = badgeRadius)
+                            drawLine(
+                              color = checkColor,
+                              start = Offset(
+                                x = badgeCenter.x - badgeRadius * 0.45f,
+                                y = badgeCenter.y + badgeRadius * 0.02f
+                              ),
+                              end = checkBottom,
+                              strokeWidth = checkStrokeWidth,
+                              cap = StrokeCap.Round
+                            )
+                            drawLine(
+                              color = checkColor,
+                              start = checkBottom,
+                              end = Offset(
+                                x = badgeCenter.x + badgeRadius * 0.5f,
+                                y = badgeCenter.y - badgeRadius * 0.35f
+                              ),
+                              strokeWidth = checkStrokeWidth,
+                              cap = StrokeCap.Round
                             )
                           }
-                        }
-                      },
-                    bitmap = taskImage.imageBitmap,
-                    contentDescription = "Captcha task image"
-                  )
-                }
 
-                if (task.images.size % 2 != 0 && task.hasWideImages) {
-                  Spacer(modifier = Modifier.weight(1f))
+                          if (task.drawFakeSliderAndNextButton()) {
+                            // Draw the "next" button (it is not clickable, it's here only to mimic the web captcha)
+                            run {
+                              val verticalPadding = 4.dp.toPx()
+                              val horizontalPadding = 8.dp.toPx()
+                              val buttonWidth =
+                                (nextButtonTextLayoutResult.size.width + horizontalPadding.toInt()).toFloat()
+                              val buttonHeight =
+                                (nextButtonTextLayoutResult.size.height + verticalPadding.toInt()).toFloat()
+
+                              translate(
+                                left = size.width - buttonWidth,
+                                top = 0f
+                              ) {
+                                drawRect(
+                                  color = chanTheme.accentColorCompose,
+                                  size = Size(width = buttonWidth, height = buttonHeight)
+                                )
+
+                                translate(left = horizontalPadding / 2f, top = verticalPadding / 2f) {
+                                  drawText(
+                                    textLayoutResult = nextButtonTextLayoutResult,
+                                    color = chanTheme.accentColorCompose.resolveTextColor()
+                                  )
+                                }
+                              }
+                            }
+
+                            // Draw the slider's thumb
+                            run {
+                              val sliderWidth = this.size.width
+                              val sliderHeight = this.size.height
+                              val sliderThumbSize = 8.dp.toPx()
+
+                              val thumbOffsetStep = (sliderWidth - (sliderThumbSize * 2)) / (task.images.size).toFloat()
+                              val thumbOffset = ((imageIndex + 1) * thumbOffsetStep) + sliderThumbSize
+
+                              drawCircle(
+                                color = if (ThemeEngine.isDarkColor(chanTheme.accentColorCompose)) {
+                                  Color.White
+                                } else {
+                                  Color.Black
+                                },
+                                center = Offset(x = thumbOffset, y = sliderHeight),
+                                radius = sliderThumbSize + 1.dp.toPx()
+                              )
+
+                              drawCircle(
+                                color = chanTheme.accentColorCompose,
+                                center = Offset(x = thumbOffset, y = sliderHeight),
+                                radius = sliderThumbSize
+                              )
+                            }
+                          }
+                        },
+                      bitmap = taskImage.imageBitmap,
+                      contentDescription = "Captcha task image"
+                    )
+                  }
+
+                  // Fill the last row with empty cells so that the images in it have the same size as in other rows
+                  val emptyCells = (imagesPerRow - task.images.size % imagesPerRow) % imagesPerRow
+                  repeat(emptyCells) {
+                    Spacer(modifier = Modifier.weight(if (task.hasWideImages) 1f else 0.5f))
+                  }
                 }
               }
             }
           }
         }
+      }
+    }
+
+    zoomedImage?.let { imageBitmap ->
+      ZoomableImageDialog(
+        imageBitmap = imageBitmap,
+        onDismiss = { zoomedImage = null }
+      )
+    }
+  }
+
+  @Composable
+  private fun ZoomableImageDialog(
+    imageBitmap: ImageBitmap,
+    onDismiss: () -> Unit
+  ) {
+    Dialog(
+      onDismissRequest = onDismiss,
+      properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+      var scale by remember { mutableStateOf(1f) }
+      var offset by remember { mutableStateOf(Offset.Zero) }
+      var containerSize by remember { mutableStateOf(IntSize.Zero) }
+
+      Box(
+        modifier = Modifier
+          .fillMaxSize()
+          .background(Color.Black.copy(alpha = 0.92f))
+          .onSizeChanged { size -> containerSize = size }
+          .pointerInput(Unit) {
+            detectTapGestures(
+              onTap = { onDismiss() },
+              onDoubleTap = {
+                scale = 1f
+                offset = Offset.Zero
+              }
+            )
+          }
+          .pointerInput(Unit) {
+            detectTransformGestures { _, pan, zoom, _ ->
+              scale = (scale * zoom).coerceIn(1f, 8f)
+
+              // The image is fit to the width of the window, so it can be moved only as far as the scaled image
+              // overflows the window. This way it can't be dragged completely out of the screen.
+              val imageWidth = containerSize.width.toFloat()
+              val imageHeight = imageWidth * imageBitmap.height.toFloat() / imageBitmap.width.toFloat()
+              val maxX = (imageWidth * scale - containerSize.width).coerceAtLeast(0f) / 2f
+              val maxY = (imageHeight * scale - containerSize.height).coerceAtLeast(0f) / 2f
+
+              offset = if (scale <= 1f) {
+                Offset.Zero
+              } else {
+                val newOffset = offset + pan
+                Offset(newOffset.x.coerceIn(-maxX, maxX), newOffset.y.coerceIn(-maxY, maxY))
+              }
+            }
+          },
+        contentAlignment = Alignment.Center
+      ) {
+        Image(
+          modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer(
+              scaleX = scale,
+              scaleY = scale,
+              translationX = offset.x,
+              translationY = offset.y
+            ),
+          bitmap = imageBitmap,
+          contentScale = ContentScale.Fit,
+          contentDescription = null
+        )
+
+        KurobaComposeText(
+          modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .padding(bottom = 24.dp),
+          text = stringResource(id = R.string.captcha_layout_zoom_hint),
+          color = Color.White,
+          fontSize = 14.ktu
+        )
       }
     }
   }
@@ -519,7 +774,7 @@ class Chan4CaptchaLayout(
         Image(
           modifier = Modifier
             .align(Alignment.CenterHorizontally)
-            .heightIn(min = 42.dp, max = 120.dp)
+            .heightIn(min = 64.dp, max = 160.dp)
             .aspectRatio(ratio = ratio),
           bitmap = title.image,
           contentDescription = null
@@ -532,7 +787,11 @@ class Chan4CaptchaLayout(
       }
       is Chan4CaptchaTitleFormatter.Title.TextWithImage -> {
         if (title.images.isEmpty()) {
-          KurobaComposeText(text = title.annotated)
+          KurobaComposeText(
+            text = title.annotated,
+            fontSize = 18.ktu,
+            fontWeight = FontWeight.SemiBold
+          )
           return
         }
 
@@ -544,7 +803,9 @@ class Chan4CaptchaLayout(
         ) {
           KurobaComposeText(
             modifier = Modifier.weight(1f),
-            text = title.annotated
+            text = title.annotated,
+            fontSize = 18.ktu,
+            fontWeight = FontWeight.SemiBold
           )
 
           title.images.forEach { imageBitmap ->
@@ -555,8 +816,8 @@ class Chan4CaptchaLayout(
             Image(
               modifier = Modifier
                 .aspectRatio(ratio = ratio)
-                .widthIn(min = 52.dp)
-                .border(width = 2.dp, color = chanTheme.accentColorCompose),
+                .widthIn(min = 72.dp)
+                .border(width = 3.dp, color = chanTheme.accentColorCompose),
               bitmap = imageBitmap,
               contentDescription = null
             )
@@ -576,7 +837,9 @@ class Chan4CaptchaLayout(
     val chanTheme = LocalChanTheme.current
     val captchaInfoAsync by viewModel.captchaInfoToShow
     val captchaDataJson by viewModel.captchaDataJson
+    val captchaTtlMillis by viewModel.captchaTtlMillisFlow.collectAsState()
     val captchaInfo = (captchaInfoAsync as? AsyncUiData.UiData)?.data
+    val isExpired = captchaInfo != null && captchaTtlMillis == 0L
 
     Row(
       horizontalArrangement = Arrangement.End,
@@ -586,39 +849,27 @@ class Chan4CaptchaLayout(
         .wrapContentHeight()
         .background(chanTheme.backColorCompose)
     ) {
+      // 48dp is the recommended minimum size of a touch target
       KurobaComposeClickableIcon(
         modifier = Modifier
-          .padding(8.dp)
-          .width(28.dp)
-          .height(28.dp),
+          .size(48.dp)
+          .padding(10.dp),
         drawableId = R.drawable.ic_settings_white_24dp,
         onClick = { showChan4CaptchaSettings() }
       )
 
-      Spacer(modifier = Modifier.width(8.dp))
-
       KurobaComposeClickableIcon(
         modifier = Modifier
-          .padding(8.dp)
-          .width(28.dp)
-          .height(28.dp),
+          .size(48.dp)
+          .padding(10.dp),
         drawableId = R.drawable.ic_refresh_white_24dp,
-        onClick = {
-          viewModel.requestCaptcha(
-            chanDescriptor = chanDescriptor,
-            mcl = "",
-            forced = true
-          )
-        }
+        onClick = { reloadCaptcha() }
       )
 
-      Spacer(modifier = Modifier.width(8.dp))
-
       KurobaComposeClickableIcon(
         modifier = Modifier
-          .padding(8.dp)
-          .width(28.dp)
-          .height(28.dp),
+          .size(48.dp)
+          .padding(10.dp),
         drawableId = R.drawable.ic_baseline_content_copy_24,
         enabled = captchaDataJson != null,
         onClick = {
@@ -632,21 +883,35 @@ class Chan4CaptchaLayout(
       Spacer(modifier = Modifier.weight(1f))
 
       run {
-        val buttonTextId = if (captchaInfo?.isNoopChallenge() == true) {
-          R.string.send
-        } else {
-          R.string.captcha_layout_verify
+        val buttonTextId = when {
+          isExpired -> R.string.captcha_layout_load_new_challenge
+          autoReply -> R.string.captcha_layout_submit_and_post
+          else -> R.string.captcha_layout_save_answer
         }
 
         KurobaComposeTextBarButton(
-          onClick = { verifyCaptcha(captchaInfo) },
-          enabled = captchaInfo != null && (captchaInfo.isFilledIn() || captchaInfo.isNoopChallenge()),
+          onClick = {
+            if (isExpired) {
+              reloadCaptcha()
+            } else {
+              verifyCaptcha(captchaInfo)
+            }
+          },
+          enabled = isExpired || (captchaInfo != null && (captchaInfo.isFilledIn() || captchaInfo.isNoopChallenge())),
           text = stringResource(id = buttonTextId)
         )
       }
 
       Spacer(modifier = Modifier.width(8.dp))
     }
+  }
+
+  private fun reloadCaptcha() {
+    viewModel.requestCaptcha(
+      chanDescriptor = chanDescriptor,
+      mcl = "",
+      forced = true
+    )
   }
 
   private fun verifyCaptcha(
@@ -671,6 +936,7 @@ class Chan4CaptchaLayout(
       return
     }
 
+    viewModel.onCaptchaSubmitted()
     captchaHolder.addNewSolution(solution, ttl)
     callback?.onAuthenticationComplete()
     viewModel.resetCaptchaForced(chanDescriptor)
@@ -729,6 +995,8 @@ class Chan4CaptchaLayout(
   }
   
   companion object {
+    private const val LOW_TTL_SECONDS = 10L
+
     private const val ACTION_SHOW_CAPTCHA_HELP = 1
     private const val ACTION_REMEMBER_CAPTCHA_COOKIES = 2
   }

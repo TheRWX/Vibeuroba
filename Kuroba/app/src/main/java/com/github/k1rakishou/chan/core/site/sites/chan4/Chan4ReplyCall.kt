@@ -194,6 +194,7 @@ class Chan4ReplyCall(
 
     if (forgotCaptcha || mistypedCaptcha) {
       replyResponse.requireAuthentication = true
+      replyResponse.captchaMistyped = mistypedCaptcha
       Logger.e(TAG, "process() requireAuthentication (forgotCaptcha: ${forgotCaptcha}, mistypedCaptcha: ${mistypedCaptcha})")
       return
     }

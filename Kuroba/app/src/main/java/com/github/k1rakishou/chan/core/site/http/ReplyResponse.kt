@@ -51,6 +51,11 @@ class ReplyResponse {
   @set:Synchronized
   var requireAuthentication = false
 
+  // The server said that a captcha answer was sent but it was wrong or has expired (as opposed to no answer at all).
+  @get:Synchronized
+  @set:Synchronized
+  var captchaMistyped = false
+
   @get:Synchronized
   @set:Synchronized
   var additionalResponseData: AdditionalResponseData = AdditionalResponseData.NoOp
@@ -90,7 +95,9 @@ class ReplyResponse {
     other.requireAuthentication,
     other.additionalResponseData,
     other.rateLimitInfo,
-  )
+  ) {
+    this.captchaMistyped = other.captchaMistyped
+  }
 
   constructor(
     posted: Boolean,

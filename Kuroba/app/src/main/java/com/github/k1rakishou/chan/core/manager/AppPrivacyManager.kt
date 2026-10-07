@@ -56,6 +56,7 @@ class AppPrivacyManager(
   private val lockCovers = WeakHashMap<Activity, LockCover>()
 
   private var locked = true
+
   // Incremented whenever a new lock session starts, so a PIN check still running from an earlier session can't
   // unlock a later one.
   private var lockGeneration = 0

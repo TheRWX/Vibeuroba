@@ -1213,8 +1213,20 @@ If you ever log out or if the passcode expires you will have to change reply mod
     <string name="captcha_layout_captcha_already_expired">The captcha has already expired</string>
     <string name="captcha_layout_verification_not_required">Verification is not required.</string>
     <string name="captcha_layout_help_text" tools:ignore="TypographyDashes">There are three captcha types:\nHard one (with slider), easy one (without slider) and NOOP (the one where you don\'t need to do anything).\n\nTo solve the hard captcha you need to adjust the slider until symbols on the image become readable. Then you need to enter those symbols into the input. You can either drag the slider or drag the image itself (they both do the same action). You can click the image to show/hide the background image. This may or may not help you to try to guess the captcha without using the slider whatsoever. The colored background is drawn to add contrast between two images (Can be disabled in the captcha settings).\n\nIn case of easy captcha you only need to enter the text displayed on the image.\n\nCaptcha detects multiple accesses from the same IP (?) and may rate–limit them for some time (like 15-120+ seconds).\n\nUPD: Captcha has been updated. Now whenever you change the captcha cookie there is a time window (approximately 12-24 hours) when you will only be receiving slider captcha by the 4chan server. I don\'t know why exactly it was changed to be like this but I have a hunch it\'s to make ban-evaders\' life more difficult. After 12-24 hours pass, you should see easy/noop captcha again.\n\nYou can change the cookies manually (for example you may want to import them from the browser). Cookies are stored for 180 days afterwards they are automatically updated the next time you make a post.</string>
-    <string name="captcha_layout_captcha_is_ready_title">Captcha is ready!</string>
-    <string name="captcha_layout_captcha_is_ready_description">Captcha is ready in \'%1$s\'</string>
+    <string name="captcha_layout_captcha_is_ready_title">Captcha cooldown is over</string>
+    <string name="captcha_layout_captcha_is_ready_description">You can now load a new captcha in \'%1$s\'</string>
+    <string name="captcha_layout_expired">Captcha expired</string>
+    <string name="captcha_layout_expired_load_new">Expired \u2013 load a new challenge</string>
+    <string name="captcha_layout_load_new_challenge">Load new challenge</string>
+    <string name="captcha_layout_loading_new_challenge">Loading a new challenge\u2026</string>
+    <string name="captcha_layout_progress">%1$d of %2$d answered</string>
+    <string name="captcha_layout_submit_and_post">Submit answer &amp; post</string>
+    <string name="captcha_layout_save_answer">Save answer</string>
+    <string name="captcha_layout_zoom_hint">Pinch to zoom \u00b7 double tap to reset \u00b7 tap to close</string>
+    <string name="captcha_layout_saved_answer_time_left">%1$ds</string>
+    <string name="reply_captcha_wrong_or_expired">The captcha answer was wrong or has expired. Please solve a new one.</string>
+    <string name="reply_captcha_after_cooldown">Posting is on cooldown for %1$d s. You will be asked for the captcha when you can post.</string>
+    <string name="reply_captcha_required">A captcha is required to post. Solve it to continue.</string>
 
     <string name="captcha_4chan_updates_title">Captcha updates history</string>
     <string name="captcha_4chan_updates_new">New.</string>
@@ -1365,7 +1377,7 @@ If you ever log out or if the passcode expires you will have to change reply mod
     <string name="post_service_processing_count">Processing %1$d replies</string>
     <string name="post_service_response_probably_banned">You are probably banned</string>
     <string name="post_service_response_probably_warned">You are probably warned</string>
-    <string name="post_service_response_authentication_required">Authentication required</string>
+    <string name="post_service_response_authentication_required">Captcha required \u2013 open the app to finish posting</string>
     <string name="post_service_response_dvach_antispam_detected">Dvach anti-spam script detected</string>
     <string name="post_service_response_unknown_error">Unknown error</string>
 

@@ -8,7 +8,7 @@ class Shironeko(
   isLightTheme: Boolean = true,
   lightStatusBar: Boolean = false,
   lightNavBar: Boolean = false,
-  accentColor: Int = Color.parseColor("#b01a3e"),
+  accentColor: Int = Color.parseColor("#5b3fd9"),
   primaryColor: Int = Color.parseColor("#c8c5e8"),
   backColor: Int = Color.parseColor("#EEF2FF"),
   backColorSecondary: Int = Color.parseColor("#dbd8f5"),

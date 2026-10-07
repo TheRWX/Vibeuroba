@@ -30,6 +30,36 @@ class Chan4CaptchaNotifierManager(
   private var _captchaViewShown = false
   private var _captchaViewModelCallbacks: CaptchaViewModelCallbacks? = null
 
+  // Written from the app scope (Default dispatcher), read from the main thread
+  @Volatile
+  private var _activeCooldown: ActiveCooldown? = null
+
+  /**
+   * Returns the cooldown error with the remaining time if there is a cooldown that is still running for the
+   * [chanDescriptor]. Used to restore the countdown when the captcha screen is closed and reopened.
+   * */
+  fun activeCooldownError(chanDescriptor: ChanDescriptor): Chan4CaptchaLayoutViewModel.CaptchaCooldownError? {
+    val activeCooldown = _activeCooldown
+      ?: return null
+
+    if (activeCooldown.chanDescriptor != chanDescriptor) {
+      return null
+    }
+
+    val remainingMs = activeCooldown.error.cooldownEndTimeMs - System.currentTimeMillis()
+    if (remainingMs <= 0L) {
+      _activeCooldown = null
+      return null
+    }
+
+    return when (activeCooldown.error) {
+      is CaptchaGenericRateLimitError -> CaptchaGenericRateLimitError(activeCooldown.error.cooldownEndTimeMs, remainingMs)
+      is CaptchaThreadRateLimitError -> CaptchaThreadRateLimitError(activeCooldown.error.cooldownEndTimeMs, remainingMs)
+      is CaptchaPostRateLimitError -> CaptchaPostRateLimitError(activeCooldown.error.cooldownEndTimeMs, remainingMs)
+      else -> null
+    }
+  }
+
   fun onCaptchaViewInitialized(callbacks: CaptchaViewModelCallbacks) {
     _captchaViewShown = true
     _captchaViewModelCallbacks = callbacks
@@ -44,7 +74,8 @@ class Chan4CaptchaNotifierManager(
 
   fun start(
     waitDescriptor: ChanDescriptor,
-    cooldownEndTimeMs: Long
+    cooldownEndTimeMs: Long,
+    cooldownError: Chan4CaptchaLayoutViewModel.CaptchaCooldownError? = null
   ) {
     if (waitDescriptor is ChanDescriptor.CompositeCatalogDescriptor) {
       // Shouldn't be possible
@@ -52,6 +83,9 @@ class Chan4CaptchaNotifierManager(
     }
 
     Logger.debug(TAG) { "start() waitDescriptor: ${waitDescriptor}, cooldownEndTimeMs: ${cooldownEndTimeMs}" }
+
+    val thisCooldown = cooldownError?.let { error -> ActiveCooldown(waitDescriptor, error) }
+    _activeCooldown = thisCooldown
 
     _waitJob?.cancel()
     _waiter.cancel()
@@ -108,6 +142,12 @@ class Chan4CaptchaNotifierManager(
           callbacks.updateCurrentCaptchaInfo(AsyncUiData.Error(updatedError))
         }
 
+        // The wait is over (or was interrupted), so don't restore this cooldown anymore, unless a newer wait has
+        // already replaced it.
+        if (_activeCooldown === thisCooldown) {
+          _activeCooldown = null
+        }
+
         if (!_captchaViewShown || applicationVisibilityManager.isAppInBackground()) {
           val chanDescriptorReadable = waitDescriptor.userReadableString()
           val largeIconUrl = when (waitDescriptor) {
@@ -155,6 +195,11 @@ class Chan4CaptchaNotifierManager(
       return false
     }
   }
+
+  private class ActiveCooldown(
+    val chanDescriptor: ChanDescriptor,
+    val error: Chan4CaptchaLayoutViewModel.CaptchaCooldownError
+  )
 
   interface CaptchaViewModelCallbacks {
     fun readCurrentCaptchaInfo(): AsyncUiData<Chan4CaptchaLayoutViewModel.CaptchaInfo>

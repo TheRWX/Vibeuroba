@@ -229,17 +229,13 @@ class ManagerModule {
     kurobaSettings: KurobaSettings,
     appScope: CoroutineScope,
     appContext: Context,
-    appConstants: AppConstants,
-    okHttpClient: Lazy<ProxiedOkHttpClient>,
-    gson: Lazy<Gson>
+    appConstants: AppConstants
   ): ReportManager {
     deps("ReportManager")
     return ReportManager(
       kurobaSettings,
       appScope,
       appContext,
-      okHttpClient,
-      gson,
       appConstants
     )
   }
