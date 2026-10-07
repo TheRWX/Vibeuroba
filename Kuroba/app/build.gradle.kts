@@ -133,19 +133,10 @@ android {
         }
     }
 
+    // One universal APK per build (Vibeuroba.apk) instead of per-ABI splits, so users only ever see a single download.
     splits {
         abi {
-            // Building a separate apk for every ABI (+ the universal one) is only needed for releases. When only debug
-            // tasks are requested (assembleDebug, installDebug, etc) build just the universal apk.
-            // Android Studio's "Run" only builds the ABI of the target device either way.
-            val requestedTaskNames = gradle.startParameter.taskNames
-            val onlyDebugTasksRequested = requestedTaskNames.isNotEmpty() &&
-                requestedTaskNames.all { taskName -> taskName.contains("debug", ignoreCase = true) }
-
-            isEnable = !onlyDebugTasksRequested
-            reset()
-            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
-            isUniversalApk = true
+            isEnable = false
         }
     }
 
