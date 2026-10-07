@@ -989,6 +989,14 @@ class ThreadPresenter @Inject constructor(
       return false
     }
 
+    return createBookmarkForThread(threadDescriptor)
+  }
+
+  /**
+   * Creates a bookmark for the thread (using the title/thumbnail of the original post if the thread is loaded).
+   * Returns false only if the thread couldn't be created in the database.
+   * */
+  private suspend fun createBookmarkForThread(threadDescriptor: ChanDescriptor.ThreadDescriptor): Boolean {
     chanPostRepository.createEmptyThreadIfNotExists(threadDescriptor)
       .safeUnwrap { error ->
         Logger.e(TAG, "createEmptyThreadIfNotExists($threadDescriptor) error", error)
@@ -996,17 +1004,20 @@ class ThreadPresenter @Inject constructor(
       }
 
     val op = chanThreadManager.getChanThread(threadDescriptor)?.getOriginalPost()
-    if (op != null) {
+    val created = if (op != null) {
       bookmarksManager.createBookmark(
         threadDescriptor,
         ChanPostUtils.getTitle(op, threadDescriptor),
         op.firstImage()?.actualThumbnailUrl
       )
-
-      return true
+    } else {
+      bookmarksManager.createBookmark(threadDescriptor)
     }
 
-    bookmarksManager.createBookmark(threadDescriptor)
+    if (!created) {
+      Logger.e(TAG, "createBookmarkForThread($threadDescriptor) bookmarksManager.createBookmark() failed")
+    }
+
     return true
   }
 
@@ -2626,22 +2637,7 @@ class ThreadPresenter @Inject constructor(
       return
     }
 
-    chanPostRepository.createEmptyThreadIfNotExists(threadDescriptor)
-      .safeUnwrap { error ->
-        Logger.e(TAG, "createEmptyThreadIfNotExists($threadDescriptor) error", error)
-        return
-      }
-
-    val op = chanThreadManager.getChanThread(threadDescriptor)?.getOriginalPost()
-    if (op != null) {
-      bookmarksManager.createBookmark(
-        threadDescriptor,
-        ChanPostUtils.getTitle(op, threadDescriptor),
-        op.firstImage()?.actualThumbnailUrl
-      )
-    } else {
-      bookmarksManager.createBookmark(threadDescriptor)
-    }
+    createBookmarkForThread(threadDescriptor)
   }
 
   private fun requestDeletePost(post: ChanPost) {

@@ -1274,18 +1274,33 @@ class ReplyLayoutState(
       }
       replyResponse.requireAuthentication -> {
         Logger.d(TAG, "onPostSendComplete(${chanDescriptor}) requireAuthentication os true replyResponse: $replyResponse")
-        // Open the captcha right away instead of making the user dismiss an error dialog first
-        if (replyResponse.captchaMistyped) {
-          showToast(appResources.string(R.string.reply_captcha_wrong_or_expired))
-        } else {
-          showToast(appResources.string(R.string.reply_captcha_required))
+        val showCaptchaFunc = {
+          callbacks.showCaptcha(
+            chanDescriptor = chanDescriptor,
+            replyMode = replyMode,
+            autoReply = true
+          )
         }
 
-        callbacks.showCaptcha(
-          chanDescriptor = chanDescriptor,
-          replyMode = replyMode,
-          autoReply = true
-        )
+        if (replyResponse.errorMessageShort.isNotNullNorBlank()) {
+          // The site told us something more specific than "captcha required" (Lynxchan, Vichan, Dvach...), the user
+          // has to be able to read it before the captcha screen covers it.
+          onPostCompleteUnsuccessful(
+            chanDescriptor = chanDescriptor,
+            replyResponse = replyResponse,
+            additionalErrorMessage = null,
+            onDismissListener = { showCaptchaFunc() }
+          )
+        } else {
+          // Open the captcha right away instead of making the user dismiss an error dialog first
+          if (replyResponse.captchaMistyped) {
+            showToast(appResources.string(R.string.reply_captcha_wrong_or_expired))
+          } else {
+            showToast(appResources.string(R.string.reply_captcha_required))
+          }
+
+          showCaptchaFunc()
+        }
       }
       else -> {
         Logger.d(TAG, "onPostSendComplete(${chanDescriptor}) else branch replyResponse: $replyResponse, retrying: $retrying")

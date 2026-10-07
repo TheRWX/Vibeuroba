@@ -53,6 +53,7 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.ScaleFactor
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.ComposeView
@@ -65,6 +66,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -496,6 +498,10 @@ class Chan4CaptchaLayout(
                           bounded = true,
                           onLongClick = { zoomedImage = taskImage.imageBitmap },
                           onClick = {
+                            val wasAnswered = tasks.getOrNull(taskIndex)
+                              ?.images
+                              ?.any { image -> image.isSelected } == true
+
                             viewModel.onCaptchaImageClicked(taskIndex, imageIndex)
 
                             val answeredNow = tasks.getOrNull(taskIndex)
@@ -503,7 +509,9 @@ class Chan4CaptchaLayout(
                               ?.getOrNull(imageIndex)
                               ?.isSelected == true
 
-                            if (answeredNow) {
+                            // Only jump ahead when this click has just answered the task. Changing an existing answer
+                            // (or a click that was ignored) must not move the user away from where they are.
+                            if (answeredNow && !wasAnswered) {
                               val nextTaskIndex = captchaInfo.nextUnansweredTaskIndex(taskIndex)
                               val firstTop = taskTops[0]
                               val nextTop = nextTaskIndex?.let { index -> taskTops[index] }
@@ -656,11 +664,13 @@ class Chan4CaptchaLayout(
     ) {
       var scale by remember { mutableStateOf(1f) }
       var offset by remember { mutableStateOf(Offset.Zero) }
+      var containerSize by remember { mutableStateOf(IntSize.Zero) }
 
       Box(
         modifier = Modifier
           .fillMaxSize()
           .background(Color.Black.copy(alpha = 0.92f))
+          .onSizeChanged { size -> containerSize = size }
           .pointerInput(Unit) {
             detectTapGestures(
               onTap = { onDismiss() },
@@ -673,7 +683,20 @@ class Chan4CaptchaLayout(
           .pointerInput(Unit) {
             detectTransformGestures { _, pan, zoom, _ ->
               scale = (scale * zoom).coerceIn(1f, 8f)
-              offset = if (scale <= 1f) Offset.Zero else offset + pan
+
+              // The image is fit to the width of the window, so it can be moved only as far as the scaled image
+              // overflows the window. This way it can't be dragged completely out of the screen.
+              val imageWidth = containerSize.width.toFloat()
+              val imageHeight = imageWidth * imageBitmap.height.toFloat() / imageBitmap.width.toFloat()
+              val maxX = (imageWidth * scale - containerSize.width).coerceAtLeast(0f) / 2f
+              val maxY = (imageHeight * scale - containerSize.height).coerceAtLeast(0f) / 2f
+
+              offset = if (scale <= 1f) {
+                Offset.Zero
+              } else {
+                val newOffset = offset + pan
+                Offset(newOffset.x.coerceIn(-maxX, maxX), newOffset.y.coerceIn(-maxY, maxY))
+              }
             }
           },
         contentAlignment = Alignment.Center

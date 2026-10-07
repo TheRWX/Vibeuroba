@@ -28,6 +28,8 @@ import com.github.k1rakishou.chan.ui.compose.components.kurobaClickable
 import com.github.k1rakishou.chan.ui.compose.ktu
 import kotlinx.coroutines.delay
 
+private const val ABOUT_TO_EXPIRE_SECONDS = 15L
+
 @Composable
 internal fun PresolveCaptchaButton(
   iconSize: Dp,
@@ -79,7 +81,7 @@ internal fun PresolveCaptchaButton(
           .padding(horizontal = 4.dp)
       ) {
         val secondsLeft = nextCaptchaSecondsLeft
-        val isAboutToExpire = secondsLeft != null && secondsLeft <= 15L
+        val isAboutToExpire = secondsLeft != null && secondsLeft <= ABOUT_TO_EXPIRE_SECONDS
 
         KurobaComposeText(
           text = if (secondsLeft != null) {

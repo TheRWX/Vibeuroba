@@ -179,6 +179,8 @@ class Chan4CaptchaLayoutViewModel(
         "chanDescriptor: $chanDescriptor, mcl: ${mcl.asFormattedToken()})"
     }
 
+    // Note: the answers of this captcha are cleared by reset() below, so it is shown dimmed and without any selected
+    // images. That's intended, those answers are of no use for the new challenge.
     _previousCaptchaInfo.value = (_captchaInfoToShow.value as? AsyncUiData.UiData)
       ?.data
       ?.takeIf { captchaInfo -> !captchaInfo.isNoopChallenge() }

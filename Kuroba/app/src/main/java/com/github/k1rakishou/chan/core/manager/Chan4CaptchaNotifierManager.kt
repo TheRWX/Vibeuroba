@@ -29,6 +29,8 @@ class Chan4CaptchaNotifierManager(
   private var _waiter = CompletableDeferred<Unit>()
   private var _captchaViewShown = false
   private var _captchaViewModelCallbacks: CaptchaViewModelCallbacks? = null
+  // Written from the app scope (Default dispatcher), read from the main thread
+  @Volatile
   private var _activeCooldown: ActiveCooldown? = null
 
   /**
@@ -81,7 +83,8 @@ class Chan4CaptchaNotifierManager(
 
     Logger.debug(TAG) { "start() waitDescriptor: ${waitDescriptor}, cooldownEndTimeMs: ${cooldownEndTimeMs}" }
 
-    _activeCooldown = cooldownError?.let { error -> ActiveCooldown(waitDescriptor, error) }
+    val thisCooldown = cooldownError?.let { error -> ActiveCooldown(waitDescriptor, error) }
+    _activeCooldown = thisCooldown
 
     _waitJob?.cancel()
     _waiter.cancel()
@@ -136,6 +139,12 @@ class Chan4CaptchaNotifierManager(
           }
 
           callbacks.updateCurrentCaptchaInfo(AsyncUiData.Error(updatedError))
+        }
+
+        // The wait is over (or was interrupted), so don't restore this cooldown anymore, unless a newer wait has
+        // already replaced it.
+        if (_activeCooldown === thisCooldown) {
+          _activeCooldown = null
         }
 
         if (!_captchaViewShown || applicationVisibilityManager.isAppInBackground()) {
