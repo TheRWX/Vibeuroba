@@ -39,18 +39,91 @@ Vibeuroba 1.1 (`v1.3.47`) is built on the current KurobaEx stable release,
 was built on the unreleased 2024 `KurobaEx_2.0.0` development branch; that base
 and its unfinished Compose rewrite were dropped in 1.1.
 
-Vibeuroba changes on top of KurobaEx:
-
-- Independent app ID, name, update channel and release signing key.
-- App lock with a user-created PIN (no default PIN), optional fingerprint/face.
-- Hide from screenshots and recents, blur thumbnails until tapped, Material You
-  theme (all off by default).
-- Bug reports open the Android share sheet; nothing is uploaded.
-- Fixes for a user-agent startup freeze and a toolbar transition crash.
+The full list of differences is below.
 
 Testing so far is manual, on Android emulators. No physical device run has been
 recorded. Release tags follow the updater scheme `vMAJOR.MINOR.PATCH`, which maps
 to the Android version code (`v1.3.47` = `10347`).
+
+## Vibeuroba vs. KurobaEx
+Vibeuroba is an Android imageboard browser built on
+[Kuroba Experimental (KurobaEx)](https://github.com/K1rakishou/Kuroba-Experimental).
+It is not a rewrite. You get the KurobaEx you may already know (tabs, bookmarks,
+the media viewer, content filters, background posting, themes, 4chan and many other
+sites), plus privacy, captcha and Android-compatibility work that Vibeuroba adds on top.
+
+### At a glance
+
+| | KurobaEx | Vibeuroba |
+|---|---|---|
+| Base | Upstream project | Tracks KurobaEx; currently built on KurobaEx v1.3.47 |
+| App ID | Upstream's | `com.github.therwx.vibeuroba`, installs alongside Kuroba/KurobaEx |
+| Updates | Upstream releases | Own releases page, own release signing key, in-app updater |
+| App lock | No | PIN, optional fingerprint/face |
+| Screenshot/recents hiding | No | Yes (opt-in) |
+| Thumbnail blur | No | Yes, blur until tapped (opt-in) |
+| Material You theme | No | Yes, Android 12+ (opt-in) |
+| Target SDK | Upstream's | Android 16 (SDK 36), predictive back |
+| Captcha screen | Upstream's | Reworked 4chan captcha UX |
+| Bug reports | Upstream's | Open the share sheet, nothing is uploaded |
+
+### What Vibeuroba changes
+
+### Privacy and security
+- **App lock** with a PIN you create (there is no default PIN), plus optional
+  fingerprint/face unlock. PIN checks run off the main thread so slow devices don't stutter.
+- **Hide from screenshots and recents** and **blur thumbnails until tapped**.
+- **Bug reports open the Android share sheet.** Nothing is uploaded; you choose where it goes.
+- All of these are off by default, so the app behaves like KurobaEx until you opt in.
+
+### Posting and captchas
+- The 4chan captcha screen was reworked: a dimmed, answer-locked expired challenge with
+  "Load new challenge", a timer that turns red in the last 10 seconds, 2-3 images per row with
+  checkmark badges, long-press pinch-zoom, an "n of m answered" progress indicator, and larger
+  tap targets.
+- When a posting cooldown is long, the reply is queued without asking for the captcha first;
+  the captcha is requested once the cooldown ends, so your answer no longer expires in the queue.
+- Mistyped or expired 4chan answers are called out as such instead of a generic "captcha required".
+- The cooldown countdown survives closing and reopening the captcha screen.
+
+### Everyday quality of life
+- Add several boards at once from the board picker ("+ Add boards").
+- Marking a post as yours bookmarks the thread.
+- Reverse image search uses HTTPS.
+- "Clear thread history" lives in the thread menu.
+- Built-in images and the theme gallery are served from Vibeuroba's own repository.
+
+### Modern Android support
+- Targets Android 16 with predictive back gestures.
+- Works on 16 KB memory-page devices (for example Pixel 8).
+- Fixes for Android 12 to 16 foreground services, permissions and system bar issues, and clean
+  stops when Android 15's background data limit runs out instead of crashing.
+- Fixes for a startup freeze (ANR) while looking up the WebView user agent, and a toolbar
+  transition crash.
+
+### Its own distribution
+- Independent app ID, name, update channel and release signing key, so Vibeuroba installs next to
+  Kuroba or KurobaEx without replacing them or their data.
+- In-app updates install through Android's package installer; on Android 12+ they install without
+  a prompt after the first one, and a "Vibeuroba updated - tap to open" notification reopens the app.
+- Release APKs are signed with the Vibeuroba key; verify with `apksigner verify --print-certs`
+  (SHA-256 `ba568a31fb051b24447636cbc2f730a2a56c02e5328985d0ea9c129dc86161de`).
+
+### Why choose Vibeuroba
+
+- You want KurobaEx's features **plus** an app lock, hidden screenshots and blurred thumbnails.
+- You post on 4chan and the captcha and cooldown flow has frustrated you.
+- You are on a recent phone (Android 12 to 16) and want current-platform behavior.
+- You want to try it **without losing** your existing Kuroba or KurobaEx install.
+- You prefer your bug reports and updates not to depend on an upstream release schedule.
+
+### Why you might not (be honest)
+
+- Settings and bookmarks are **not migrated** from Kuroba or KurobaEx.
+- Testing so far is manual on Android emulators; no physical device run is recorded.
+- It follows KurobaEx's feature set. It does not add new sites, and site availability depends
+  on each site's API.
+- The upstream APKs and F-Droid listing are separate distributions and are not shared.
 
 ## Download and installation
 
