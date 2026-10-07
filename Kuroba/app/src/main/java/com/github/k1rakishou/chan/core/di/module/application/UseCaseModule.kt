@@ -61,6 +61,7 @@ import com.github.k1rakishou.model.repository.ChanPostRepository
 import com.github.k1rakishou.model.repository.ChanSavedReplyRepository
 import com.github.k1rakishou.model.repository.DatabaseMetaRepository
 import com.github.k1rakishou.v2.KurobaSettings
+import com.github.k1rakishou.v2.database.KurobaSettingsDatabase
 import com.google.gson.Gson
 import com.squareup.moshi.Moshi
 import dagger.Lazy
@@ -198,6 +199,7 @@ class UseCaseModule {
     appContext: Context,
     appConstants: AppConstants,
     databaseMetaRepository: DatabaseMetaRepository,
+    kurobaSettingsDatabase: KurobaSettingsDatabase,
     fileManager: FileManager
   ): ExportBackupFileUseCase {
     Logger.deps("ExportBackupFileUseCase")
@@ -205,6 +207,7 @@ class UseCaseModule {
       appContext,
       appConstants,
       databaseMetaRepository,
+      kurobaSettingsDatabase,
       fileManager
     )
   }

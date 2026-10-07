@@ -27,6 +27,7 @@ class ExportBackupFileUseCase(
   private val appContext: Context,
   private val appConstants: AppConstants,
   private val databaseMetaRepository: DatabaseMetaRepository,
+  private val kurobaSettingsDatabase: KurobaSettingsDatabase,
   private val fileManager: FileManager
 ) : ISuspendUseCase<ExportBackupFileUseCase.Params, ModularResult<Unit>> {
 
@@ -61,9 +62,13 @@ class ExportBackupFileUseCase(
     }
 
     filesToExport += databases.mapNotNull { databaseName ->
+      // The settings database is exported separately, from a copy without non-backupable settings.
+      if (databaseName.contains(KurobaSettingsDatabase.DATABASE_NAME, ignoreCase = true)) {
+        return@mapNotNull null
+      }
+
       val isKurobaAppDatabase =
         databaseName.contains(KurobaMainDatabase.DATABASE_NAME, ignoreCase = true) ||
-        databaseName.contains(KurobaSettingsDatabase.DATABASE_NAME, ignoreCase = true) ||
         (exportBackupOptions.exportLogsDatabase && databaseName.contains(LOGGER_DATABASE_NAME, ignoreCase = true))
 
       if (!isKurobaAppDatabase) {
@@ -91,6 +96,39 @@ class ExportBackupFileUseCase(
 
     Logger.d(TAG, "Executing checkpoint command... done! took ${time}")
 
+    val sanitizedSettingsDatabase = createSanitizedSettingsDatabaseCopy()
+
+    try {
+      sanitizedSettingsDatabase.files.forEach { settingsFile ->
+        Logger.d(TAG, "Settings file to export: '${settingsFile.absolutePath}'")
+      }
+
+      writeBackupZip(outputFile, filesToExport + sanitizedSettingsDatabase.files)
+    } finally {
+      sanitizedSettingsDatabase.close()
+    }
+  }
+
+  /**
+   * The settings database holds non-backupable settings such as the app lock PIN hash, which must not
+   * end up in a backup file. Export a copy with those rows removed instead of the live database file.
+   */
+  private fun createSanitizedSettingsDatabaseCopy(): SanitizedSettingsDatabaseCopy {
+    // Fold the live WAL into the main file so the copy has every current setting.
+    kurobaSettingsDatabase.openHelper.writableDatabase.query("PRAGMA wal_checkpoint(FULL)").use { cursor ->
+      if (cursor.moveToFirst() && cursor.getInt(0) != 0) {
+        Logger.w(TAG, "Settings database checkpoint was blocked, the backup may miss the latest changes")
+      }
+    }
+
+    return SanitizedSettingsDatabaseCopy.create(
+      appContext = appContext,
+      sourceDatabaseFile = appContext.getDatabasePath(KurobaSettingsDatabase.DATABASE_NAME),
+      tempDir = File(appContext.cacheDir, SETTINGS_EXPORT_TEMP_DIR)
+    )
+  }
+
+  private fun writeBackupZip(outputFile: ExternalFile, filesToExport: List<File>) {
     val outputStream = fileManager.getOutputStream(outputFile)
       ?: throw IOException("Failed to open output stream for file '${outputFile.getFullPath()}'")
     val zipOutputStream = ZipOutputStream(outputStream)
@@ -188,6 +226,7 @@ class ExportBackupFileUseCase(
     const val CURRENT_BACKUP_VERSION = 1
 
     const val THREAD_DOWNLOADS_CACHE_DIR = "thread_downloads_cache_dir"
+    private const val SETTINGS_EXPORT_TEMP_DIR = "settings_backup_export"
     const val BUFFER_SIZE = 8192
   }
 }
