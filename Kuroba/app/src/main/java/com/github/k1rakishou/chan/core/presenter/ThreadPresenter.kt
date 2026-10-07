@@ -2585,6 +2585,7 @@ class ThreadPresenter @Inject constructor(
       savedReplyManager.unsavePost(post.postDescriptor)
     } else {
       savedReplyManager.savePost(post.postDescriptor)
+      bookmarkThreadAfterSavingOwnPost(post.postDescriptor.threadDescriptor())
     }
 
     // Trigger onDemandContentLoaderManager for this post again
@@ -2609,6 +2610,37 @@ class ThreadPresenter @Inject constructor(
         chanCacheUpdateOptions = ChanCacheUpdateOptions.DoNotUpdateCache,
         refreshPostPopupHelperPosts = true
       )
+    }
+  }
+
+  /**
+   * Marking a post as your own is the same as posting it as far as following the thread is concerned, so respect the
+   * "Bookmark thread on post" setting here as well.
+   * */
+  private suspend fun bookmarkThreadAfterSavingOwnPost(threadDescriptor: ChanDescriptor.ThreadDescriptor) {
+    if (!kurobaSettings.application.postPinThread.read()) {
+      return
+    }
+
+    if (!bookmarksManager.isReady() || bookmarksManager.contains(threadDescriptor)) {
+      return
+    }
+
+    chanPostRepository.createEmptyThreadIfNotExists(threadDescriptor)
+      .safeUnwrap { error ->
+        Logger.e(TAG, "createEmptyThreadIfNotExists($threadDescriptor) error", error)
+        return
+      }
+
+    val op = chanThreadManager.getChanThread(threadDescriptor)?.getOriginalPost()
+    if (op != null) {
+      bookmarksManager.createBookmark(
+        threadDescriptor,
+        ChanPostUtils.getTitle(op, threadDescriptor),
+        op.firstImage()?.actualThumbnailUrl
+      )
+    } else {
+      bookmarksManager.createBookmark(threadDescriptor)
     }
   }
 

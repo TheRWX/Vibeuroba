@@ -41,7 +41,7 @@ abstract class ImageSearch {
           get() = "iqdb"
 
         override fun getUrl(imageUrl: String): String {
-          return "http://iqdb.org/?url=$imageUrl"
+          return "https://iqdb.org/?url=$imageUrl"
         }
       })
 
@@ -65,7 +65,7 @@ abstract class ImageSearch {
           get() = "TinEye"
 
         override fun getUrl(imageUrl: String): String {
-          return "http://tineye.com/search/?url=$imageUrl"
+          return "https://tineye.com/search/?url=$imageUrl"
         }
       })
 
