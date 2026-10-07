@@ -266,7 +266,13 @@ class BoardSelectionController(
                 .fillMaxWidth()
                 .kurobaClickable(
                   bounded = true,
-                  onClick = { callback.onSiteSelected(selectableBoardElement.siteDescriptor) }
+                  onClick = {
+                    if (selectableBoardElement.canAddBoards) {
+                      callback.onAddBoardsClicked(selectableBoardElement.siteDescriptor)
+                    } else {
+                      callback.onSiteSelected(selectableBoardElement.siteDescriptor)
+                    }
+                  }
                 )
                 .padding(vertical = 8.dp),
               contentAlignment = Alignment.Center
@@ -379,6 +385,15 @@ class BoardSelectionController(
       KurobaComposeText(text = siteHeader.name)
       Spacer(modifier = Modifier.width(8.dp))
       KurobaComposeDivider(modifier = Modifier.weight(1f))
+
+      if (siteHeader.canAddBoards) {
+        Spacer(modifier = Modifier.width(8.dp))
+        KurobaComposeTextBarButton(
+          text = stringResource(R.string.controller_board_add_boards),
+          onClick = { callback.onAddBoardsClicked(siteHeader.siteDescriptor) }
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+      }
     }
   }
 
@@ -508,6 +523,7 @@ class BoardSelectionController(
   interface UserSelectionListener {
     fun onOpenSitesSettingsClicked()
     fun onSiteSelected(siteDescriptor: SiteDescriptor)
+    fun onAddBoardsClicked(siteDescriptor: SiteDescriptor)
     fun onCatalogSelected(catalogDescriptor: ChanDescriptor.ICatalogDescriptor)
   }
 

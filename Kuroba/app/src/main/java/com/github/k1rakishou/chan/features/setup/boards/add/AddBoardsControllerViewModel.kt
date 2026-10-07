@@ -189,7 +189,7 @@ class AddBoardsControllerViewModel(
           val matches = query.isEmpty()
             || chanBoard.formattedBoardCode().contains(query, ignoreCase = true)
             || chanBoard.boardName().contains(query, ignoreCase = true)
-            || (boardDescription.isEmpty() || boardDescription.contains(query, ignoreCase = true))
+            || (boardDescription.isNotEmpty() && boardDescription.contains(query, ignoreCase = true))
 
           if (matches) {
             ++totalMatched

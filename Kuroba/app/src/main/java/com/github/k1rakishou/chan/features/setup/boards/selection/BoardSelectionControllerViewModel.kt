@@ -117,7 +117,8 @@ class BoardSelectionControllerViewModel(
         val site = siteManager.bySiteDescriptorAndActive(siteHeader.siteDescriptor)
           ?: return@forEach
 
-        val boards = if (site.hasSiteFeature(SiteConfiguration.SiteFeature.CatalogComposition)) {
+        val isCompositeCatalogSite = site.hasSiteFeature(SiteConfiguration.SiteFeature.CatalogComposition)
+        val boards = if (isCompositeCatalogSite) {
           collectBoardsFromCompositeCatalogs(query, activeSiteCount)
         } else {
           collectBoardsFromBoardManager(query, siteHeader.siteDescriptor, activeSiteCount)
@@ -128,8 +129,9 @@ class BoardSelectionControllerViewModel(
           return@forEach
         }
 
-        elements.add(siteHeader)
-        elements.add(SelectableElement.Boards(siteHeader.siteDescriptor, boards))
+        val canAddBoards = !isCompositeCatalogSite && !archivesManager.isSiteArchive(site.descriptor)
+        elements.add(siteHeader.copy(canAddBoards = canAddBoards))
+        elements.add(SelectableElement.Boards(siteHeader.siteDescriptor, boards, canAddBoards))
       }
 
       Snapshot.withMutableSnapshot {
@@ -317,11 +319,13 @@ class BoardSelectionControllerViewModel(
     data class SiteHeader(
       val siteDescriptor: SiteDescriptor,
       val name: String,
+      val canAddBoards: Boolean = false,
     ) : SelectableElement
 
     data class Boards(
       val siteDescriptor: SiteDescriptor,
-      val selectableBoards: List<SelectableBoard>
+      val selectableBoards: List<SelectableBoard>,
+      val canAddBoards: Boolean
     ) : SelectableElement
   }
 
